@@ -259,6 +259,95 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start 3D Background
     init3DBackground();
 
+    // --- Shared Functions ---
+    function createForklift(bodyColor) {
+        const forklift = new THREE.Group();
+        const baseMat = new THREE.MeshLambertMaterial({ color: 0x1e293b }); 
+        const bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor }); 
+        const forkMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+        
+        const bodyGeo = new THREE.BoxGeometry(1.2, 0.8, 1.6);
+        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+        bodyMesh.position.set(0, 0.4, 0.2); 
+        forklift.add(bodyMesh);
+
+        const roofGeo = new THREE.BoxGeometry(1.0, 0.1, 1.0);
+        const roofMesh = new THREE.Mesh(roofGeo, baseMat);
+        roofMesh.position.set(0, 1.4, 0.3);
+        forklift.add(roofMesh);
+        
+        const pillarGeo = new THREE.BoxGeometry(0.1, 0.6, 0.1);
+        const p1 = new THREE.Mesh(pillarGeo, baseMat); p1.position.set(-0.45, 1.1, -0.15); forklift.add(p1);
+        const p2 = new THREE.Mesh(pillarGeo, baseMat); p2.position.set(0.45, 1.1, -0.15); forklift.add(p2);
+        const p3 = new THREE.Mesh(pillarGeo, baseMat); p3.position.set(-0.45, 1.1, 0.75); forklift.add(p3);
+        const p4 = new THREE.Mesh(pillarGeo, baseMat); p4.position.set(0.45, 1.1, 0.75); forklift.add(p4);
+
+        const mastGeo = new THREE.BoxGeometry(1.2, 1.8, 0.2);
+        const mastMesh = new THREE.Mesh(mastGeo, baseMat);
+        mastMesh.position.set(0, 0.9, 1.1);
+        forklift.add(mastMesh);
+
+        const forkGeo = new THREE.BoxGeometry(0.15, 0.05, 1.2);
+        const fork1 = new THREE.Mesh(forkGeo, forkMat);
+        fork1.position.set(-0.35, 0.05, 1.3); 
+        forklift.add(fork1);
+        
+        const fork2 = new THREE.Mesh(forkGeo, forkMat);
+        fork2.position.set(0.35, 0.05, 1.3);
+        forklift.add(fork2);
+
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+        const light = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), lightMat);
+        light.position.set(0, 1.55, 0.3);
+        forklift.add(light);
+
+        return forklift;
+    }
+
+    function createForkliftSimulation(bodyColor) {
+        const forklift = new THREE.Group();
+        const baseMat = new THREE.MeshLambertMaterial({ color: 0x1e293b }); 
+        const bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor }); 
+        const forkMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+        
+        const bodyGeo = new THREE.BoxGeometry(1.2, 0.8, 1.6);
+        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+        bodyMesh.position.set(0, 0.4, 0.2); 
+        forklift.add(bodyMesh);
+
+        const roofGeo = new THREE.BoxGeometry(1.0, 0.1, 1.0);
+        const roofMesh = new THREE.Mesh(roofGeo, baseMat);
+        roofMesh.position.set(0, 1.4, 0.3);
+        forklift.add(roofMesh);
+        
+        const pillarGeo = new THREE.BoxGeometry(0.1, 0.6, 0.1);
+        const p1 = new THREE.Mesh(pillarGeo, baseMat); p1.position.set(-0.45, 1.1, -0.15); forklift.add(p1);
+        const p2 = new THREE.Mesh(pillarGeo, baseMat); p2.position.set(0.45, 1.1, -0.15); forklift.add(p2);
+        const p3 = new THREE.Mesh(pillarGeo, baseMat); p3.position.set(-0.45, 1.1, 0.75); forklift.add(p3);
+        const p4 = new THREE.Mesh(pillarGeo, baseMat); p4.position.set(0.45, 1.1, 0.75); forklift.add(p4);
+
+        const mastGeo = new THREE.BoxGeometry(1.2, 1.8, 0.2);
+        const mastMesh = new THREE.Mesh(mastGeo, baseMat);
+        mastMesh.position.set(0, 0.9, -0.7);
+        forklift.add(mastMesh);
+
+        const forkGeo = new THREE.BoxGeometry(0.15, 0.05, 1.2);
+        const fork1 = new THREE.Mesh(forkGeo, forkMat);
+        fork1.position.set(-0.35, 0.05, -1.3); 
+        forklift.add(fork1);
+        
+        const fork2 = new THREE.Mesh(forkGeo, forkMat);
+        fork2.position.set(0.35, 0.05, -1.3);
+        forklift.add(fork2);
+
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+        const light = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), lightMat);
+        light.position.set(0, 1.55, 0.3);
+        forklift.add(light);
+
+        return forklift;
+    }
+
     // --- 5. 3D Warehouse & Code Typing Animation ---
     function initWarehouseDemo() {
         const container = document.getElementById('warehouse-canvas-container');
@@ -300,48 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
         shelf2.position.set(4, 2, 0);
         scene.add(shelf2);
 
-        // 4. LGV (Automated Guided Vehicle) - Detailed Shape
-        const lgv = new THREE.Group();
-        
-        const lgvBaseMat = new THREE.MeshLambertMaterial({ color: 0x1e293b }); // dark grey base
-        const lgvBodyMat = new THREE.MeshLambertMaterial({ color: 0xf59e0b }); // amber / orange
-        const lgvScannerMat = new THREE.MeshLambertMaterial({ color: 0x0ea5e9, emissive: 0x0ea5e9, emissiveIntensity: 0.5 });
-        
-        // Base bumper
-        const baseGeo = new THREE.BoxGeometry(1.3, 0.2, 1.9);
-        const baseMesh = new THREE.Mesh(baseGeo, lgvBaseMat);
-        baseMesh.position.y = -0.2;
-        lgv.add(baseMesh);
-
-        // Main chassis
-        const chassisGeo = new THREE.BoxGeometry(1.1, 0.3, 1.7);
-        const chassisMesh = new THREE.Mesh(chassisGeo, lgvBodyMat);
-        chassisMesh.position.y = 0.05;
-        lgv.add(chassisMesh);
-
-        // Scanners at both ends
-        const scannerGeo = new THREE.BoxGeometry(0.8, 0.15, 0.3);
-        const scanner1 = new THREE.Mesh(scannerGeo, lgvScannerMat);
-        scanner1.position.set(0, -0.05, 0.95);
-        lgv.add(scanner1);
-        
-        const scanner2 = new THREE.Mesh(scannerGeo, lgvScannerMat);
-        scanner2.position.set(0, -0.05, -0.95);
-        lgv.add(scanner2);
-
-        // Warning light mast
-        const mastGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.7, 8);
-        const mast = new THREE.Mesh(mastGeo, lgvBaseMat);
-        mast.position.set(-0.4, 0.5, 0);
-        lgv.add(mast);
-
-        const lightGeo = new THREE.SphereGeometry(0.08, 8, 8);
-        const lightMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
-        const light = new THREE.Mesh(lightGeo, lightMat);
-        light.position.set(-0.4, 0.85, 0);
-        lgv.add(light);
-
-        lgv.position.set(0, 0.3, 6);
+        // 4. LGV (Forklift)
+        const lgv = createForklift(0xf59e0b); // orange body
         scene.add(lgv);
 
         // Pallet
@@ -352,26 +401,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // State Machine for LGV
         const states = [
-            { target: new THREE.Vector3(0, 0.3, 6), action: 'idle' },
-            { target: new THREE.Vector3(-2.8, 0.3, 6), action: 'move' },
-            { target: new THREE.Vector3(-2.8, 0.3, 0), action: 'move' }, // near shelf1
-            { target: new THREE.Vector3(-2.8, 0.3, 0), action: 'pickup' },
-            { target: new THREE.Vector3(-2.8, 0.3, 6), action: 'move' },
-            { target: new THREE.Vector3(2.8, 0.3, 6), action: 'move' },
-            { target: new THREE.Vector3(2.8, 0.3, 0), action: 'move' }, // near shelf2
-            { target: new THREE.Vector3(2.8, 0.3, 0), action: 'drop' },
-            { target: new THREE.Vector3(2.8, 0.3, 6), action: 'move' },
-            { target: new THREE.Vector3(0, 0.3, 6), action: 'move' }
+            { target: new THREE.Vector3(0, 0, 6), action: 'idle' },
+            { target: new THREE.Vector3(-0.5, 0, 6), action: 'move' },
+            { target: new THREE.Vector3(-0.5, 0, 0), action: 'move' },
+            { target: new THREE.Vector3(-1.5, 0, 0), action: 'turn' }, // Face shelf 1
+            { target: new THREE.Vector3(-1.5, 0, 0), action: 'move' }, // Drive forks under pallet
+            { target: new THREE.Vector3(0.5, 0, 0), action: 'pickup' },
+            { target: new THREE.Vector3(-0.5, 0, 0), action: 'move_back' }, // Back away from shelf
+            { target: new THREE.Vector3(-0.5, 0, 6), action: 'move' }, // Back to corridor
+            { target: new THREE.Vector3(0.5, 0, 6), action: 'move' }, // Move along corridor to next zone
+            { target: new THREE.Vector3(0.5, 0, 0), action: 'move' }, // Approach shelf 2
+            { target: new THREE.Vector3(5, 0, 0), action: 'turn' }, // Face shelf 2
+            { target: new THREE.Vector3(1.5, 0, 0), action: 'move' }, // Drive forks in securely
+            { target: new THREE.Vector3(1.5, 0, 0), action: 'drop' }, // Lower pallet
+            { target: new THREE.Vector3(0.5, 0, 0), action: 'move_back' }, // Back away safely
+            { target: new THREE.Vector3(0.5, 0, 6), action: 'move' }, // Back to corridor
+            { target: new THREE.Vector3(0, 0, 6), action: 'move' } // Return to origin
         ];
 
         let currentStateIndex = 0;
         let hasPallet = false;
 
-        // Ensure pallet is placed correctly at start (shelf 1)
+        lgv.position.set(0, 0, 6);
+
+        // Ensure pallet is placed perfectly in front of shelf 1 for pickup
         pallet.position.set(-2.8, 0.1, 0); 
 
         const clock = new THREE.Clock();
-        const speed = 3.0;
+        const speed = 2.5; // Slightly slower for realism
 
         function animate3D() {
             requestAnimationFrame(animate3D);
@@ -379,17 +436,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const state = states[currentStateIndex];
             
-            if (state.action === 'move') {
+            if (state.action === 'move' || state.action === 'move_back') {
                 const direction = new THREE.Vector3().subVectors(state.target, lgv.position);
                 const distance = direction.length();
                 
-                if (distance > 0.1) {
+                if (distance > 0.05) {
                     direction.normalize();
                     lgv.position.add(direction.multiplyScalar(speed * delta));
-                    // Look in direction of movement
-                    const lookAtTarget = lgv.position.clone().add(direction);
-                    lgv.lookAt(lookAtTarget);
+                    
+                    // Look smoothly in direction of movement (unless backing up)
+                    if (state.action === 'move') {
+                        const lookAtTarget = lgv.position.clone().add(direction);
+                        const currentQuat = lgv.quaternion.clone();
+                        lgv.lookAt(lookAtTarget);
+                        const targetQuat = lgv.quaternion.clone();
+                        lgv.quaternion.copy(currentQuat);
+                        lgv.quaternion.slerp(targetQuat, 12 * delta); // Smooth rotation
+                    }
                 } else {
+                    lgv.position.copy(state.target);
+                    currentStateIndex = (currentStateIndex + 1) % states.length;
+                }
+            } else if (state.action === 'turn') {
+                const currentQuat = lgv.quaternion.clone();
+                lgv.lookAt(state.target);
+                const targetQuat = lgv.quaternion.clone();
+                lgv.quaternion.copy(currentQuat);
+                lgv.quaternion.slerp(targetQuat, 8 * delta);
+                
+                if (!lgv.userData.timer) lgv.userData.timer = 0;
+                lgv.userData.timer += delta;
+                if (lgv.userData.timer > 0.6) { // Wait for turn to finish cleanly
+                    lgv.lookAt(state.target);
+                    lgv.userData.timer = 0;
                     currentStateIndex = (currentStateIndex + 1) % states.length;
                 }
             } else if (state.action === 'pickup') {
@@ -423,8 +502,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Sync pallet position
             if (hasPallet) {
-                pallet.position.copy(lgv.position);
-                pallet.position.y += 0.3; // sit correctly on top of new chassis
+                const offset = new THREE.Vector3(0, 0.2, 1.4);
+                offset.applyQuaternion(lgv.quaternion);
+                pallet.position.copy(lgv.position).add(offset);
             }
 
             renderer.render(scene, camera);
@@ -499,4 +579,256 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initWarehouseDemo();
+
+    // --- 6. Interactive LGV Game ---
+    function initInteractiveGame() {
+        const container = document.getElementById('game-canvas-container');
+        if (!container || typeof THREE === 'undefined') return;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0f1c);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+        camera.position.set(0, 15, 15);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 20, 10);
+        scene.add(dirLight);
+
+        // Floor Grid
+        const gridHelper = new THREE.GridHelper(20, 20, 0x334155, 0x1e293b);
+        scene.add(gridHelper);
+
+        // Boundaries to prevent leaving the grid (-10 to 10 on X and Z)
+        const BOUNDARY = 9.0;
+
+        // Interactive Racks
+        const racks = [];
+        const shelfGeo = new THREE.BoxGeometry(2, 4, 6);
+        const shelfMaterial = new THREE.MeshLambertMaterial({ color: 0x3b82f6, wireframe: true, transparent: true, opacity: 0.4 });
+        
+        function createRack(x, z, rotY = 0) {
+            const rack = new THREE.Mesh(shelfGeo, shelfMaterial);
+            rack.position.set(x, 2, z);
+            rack.rotation.y = rotY;
+            scene.add(rack);
+            
+            const width = rotY === 0 ? 2 : 6;
+            const depth = rotY === 0 ? 6 : 2;
+            racks.push({
+                minX: x - width/2 - 1.2, // extra padding for forklift length
+                maxX: x + width/2 + 1.2,
+                minZ: z - depth/2 - 1.2,
+                maxZ: z + depth/2 + 1.2
+            });
+        }
+
+        createRack(-6, 0);
+        createRack(6, 0);
+        createRack(0, -7, Math.PI / 2);
+
+        // Player LGV (Forklift)
+        const lgv = createForkliftSimulation(0x0ea5e9); // blue body for user
+        lgv.position.set(0, 0, 5);
+        scene.add(lgv);
+
+        // Pallet
+        const palletGeo = new THREE.BoxGeometry(1.0, 0.2, 1.0);
+        const palletMat = new THREE.MeshLambertMaterial({ color: 0x8b5cf6 });
+        const pallet = new THREE.Mesh(palletGeo, palletMat);
+        pallet.position.set(0, 0.1, 0);
+        scene.add(pallet);
+
+        // Drop Zones
+        const dropZoneMat = new THREE.MeshBasicMaterial({ color: 0x0ea5e9, wireframe: true, transparent: true, opacity: 0.3 });
+        const dropZoneGeo = new THREE.PlaneGeometry(2, 2);
+        dropZoneGeo.rotateX(-Math.PI / 2);
+        
+        const dropZone1 = new THREE.Mesh(dropZoneGeo, dropZoneMat);
+        dropZone1.position.set(-5, 0.01, -5);
+        scene.add(dropZone1);
+
+        const dropZone2 = new THREE.Mesh(dropZoneGeo, dropZoneMat);
+        dropZone2.position.set(5, 0.01, -5);
+        scene.add(dropZone2);
+
+        // Game State
+        let playerHasPallet = false;
+        let lgvAngle = Math.PI; // Forward facing -Z initially
+        const lgvSpeed = 0.15;
+        const turnSpeed = 0.05;
+
+        // Controls Map
+        const keys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+
+        const statusLabel = document.getElementById('game-status');
+
+        function updateStatus(msg, isError = false) {
+            statusLabel.textContent = msg;
+            statusLabel.style.color = isError ? '#ff5f56' : '#10b981';
+            statusLabel.style.borderColor = isError ? '#ff5f56' : '#10b981';
+        }
+
+        function togglePallet() {
+            if (playerHasPallet) {
+                // Drop
+                playerHasPallet = false;
+                const offset = new THREE.Vector3(0, 0.2, -1.3);
+                offset.applyQuaternion(lgv.quaternion);
+                pallet.position.copy(lgv.position).add(offset);
+                pallet.position.y = 0.1;
+                updateStatus("Pallet dropped successfully.");
+            } else {
+                // Pick
+                const offset = new THREE.Vector3(0, 0, -1.3);
+                offset.applyQuaternion(lgv.quaternion);
+                const forkTipPos = lgv.position.clone().add(offset);
+                
+                const dist = forkTipPos.distanceTo(new THREE.Vector3(pallet.position.x, forkTipPos.y, pallet.position.z));
+                if (dist < 1.5) {
+                    playerHasPallet = true;
+                    updateStatus("Pallet picked up.");
+                } else {
+                    updateStatus("Too far from pallet to pick up!", true);
+                }
+            }
+        }
+
+        // UI Buttons
+        const btnUp = document.getElementById('btn-up');
+        const btnDown = document.getElementById('btn-down');
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnAction = document.getElementById('btn-action');
+
+        function addBtnListeners(btn, key) {
+            btn.addEventListener('mousedown', () => keys[key] = true);
+            btn.addEventListener('mouseup', () => keys[key] = false);
+            btn.addEventListener('mouseleave', () => keys[key] = false);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+        }
+
+        addBtnListeners(btnUp, 'up');
+        addBtnListeners(btnDown, 'down');
+        addBtnListeners(btnLeft, 'left');
+        addBtnListeners(btnRight, 'right');
+
+        btnAction.addEventListener('click', togglePallet);
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.up = true;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.down = true;
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+            if (e.key === ' ' || e.key === 'Enter') togglePallet();
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.up = false;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.down = false;
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+        });
+
+        const clock = new THREE.Clock();
+
+        // Loop
+        function animateGame() {
+            requestAnimationFrame(animateGame);
+
+            // Movement Logic
+            let moved = false;
+            if (keys.left) lgvAngle += turnSpeed;
+            if (keys.right) lgvAngle -= turnSpeed;
+
+            lgv.rotation.y = lgvAngle;
+
+            const direction = new THREE.Vector3(Math.sin(lgvAngle), 0, Math.cos(lgvAngle));
+
+            let nextX = lgv.position.x;
+            let nextZ = lgv.position.z;
+
+            if (keys.up) {
+                nextX += direction.x * lgvSpeed;
+                nextZ += direction.z * lgvSpeed;
+                moved = true;
+            }
+            if (keys.down) {
+                nextX -= direction.x * lgvSpeed * 0.5; // Backup slower
+                nextZ -= direction.z * lgvSpeed * 0.5;
+                moved = true;
+            }
+
+            // Rack Collision checks
+            const clockTime = clock.getElapsedTime();
+            let collision = false;
+            for (const rack of racks) {
+                if (nextX > rack.minX && nextX < rack.maxX && nextZ > rack.minZ && nextZ < rack.maxZ) {
+                    collision = true;
+                    if (!lgv.userData.crashTimer || clockTime - lgv.userData.crashTimer > 3) {
+                        const messages = [
+                            "Whoops! Racks don't yield!",
+                            "OSHA wants to know your location.",
+                            "That wasn't in the routing logic...",
+                            "Looks like we need to debug your driving.",
+                            "Did your LGV license expire?"
+                        ];
+                        updateStatus(messages[Math.floor(Math.random() * messages.length)], true);
+                        lgv.userData.crashTimer = clockTime;
+                    }
+                    break;
+                }
+            }
+
+            // Boundary checks
+            if (nextX > BOUNDARY) nextX = BOUNDARY;
+            if (nextX < -BOUNDARY) nextX = -BOUNDARY;
+            if (nextZ > BOUNDARY) nextZ = BOUNDARY;
+            if (nextZ < -BOUNDARY) nextZ = -BOUNDARY;
+
+            if (!collision) {
+                lgv.position.set(nextX, lgv.position.y, nextZ);
+                if (moved && (statusLabel.textContent.includes("Too far") || statusLabel.textContent.includes("System Online"))) {
+                    // Only clear the error if it wasn't a recent crash
+                    if (!lgv.userData.crashTimer || clockTime - lgv.userData.crashTimer > 3) {
+                        updateStatus("System Online. Awaiting commands.");
+                    }
+                }
+            }
+
+            if (playerHasPallet) {
+                const offset = new THREE.Vector3(0, 0.2, -1.3);
+                offset.applyQuaternion(lgv.quaternion);
+                pallet.position.copy(lgv.position).add(offset);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animateGame();
+
+        window.addEventListener('resize', () => {
+            if (container.clientWidth > 0) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        });
+    }
+
+    initInteractiveGame();
 });

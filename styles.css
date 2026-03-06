@@ -527,7 +527,7 @@ ul {
   font-size: 0.95rem;
 }
 
-.job-duties li::before {
+  .job-duties li::before {
   content: '▹';
   position: absolute;
   left: 0;
@@ -537,6 +537,85 @@ ul {
 .job-duties strong {
   color: var(--text-main);
 }
+
+/* =========================================
+   Warehouse Demo Section
+========================================= */
+.warehouse-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+#warehouse-canvas-container {
+  width: 100%;
+  height: 450px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 0;
+}
+
+#warehouse-canvas-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
+  border-radius: 12px;
+}
+
+.pc-mockup {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(30, 30, 30, 0.85); /* VS dark theme bg */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  height: 450px;
+}
+
+.pc-header {
+  background: rgba(45, 45, 48, 0.95);
+  padding: 0.8rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.dot.red { background: #ff5f56; }
+.dot.yellow { background: #ffbd2e; }
+.dot.green { background: #27c93f; }
+
+.pc-title {
+  color: #cccccc;
+  font-size: 0.85rem;
+  font-family: var(--font-body);
+  margin-left: 1rem;
+}
+
+.pc-body {
+  padding: 1.5rem;
+  flex-grow: 1;
+  overflow-y: auto;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.95rem;
+  color: #d4d4d4;
+  line-height: 1.5;
+}
+
+.pc-body .keyword { color: #569cd6; font-weight: bold; }
+.pc-body .type { color: #4ec9b0; }
+.pc-body .method { color: #dcdcaa; }
+.pc-body .string { color: #ce9178; }
+.pc-body .comment { color: #6a9955; }
+.pc-body .number { color: #b5cea8; }
 
 /* =========================================
    Skills Section
@@ -736,6 +815,10 @@ footer p {
   
   .section-header h2 {
     font-size: 2.2rem;
+  }
+
+  .warehouse-container {
+    grid-template-columns: 1fr;
   }
 }
 

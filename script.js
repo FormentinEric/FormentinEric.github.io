@@ -831,4 +831,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initInteractiveGame();
+
+    // --- 7. GDPR Cookie Consent Logic ---
+    const cookieBanner = document.getElementById('cookie-banner');
+    const acceptCookiesBtn = document.getElementById('accept-cookies');
+
+    if (cookieBanner && acceptCookiesBtn) {
+        // Check if user already accepted
+        if (!localStorage.getItem('cookieConsent')) {
+            // Slight delay to animate banner in
+            setTimeout(() => {
+                cookieBanner.classList.remove('hidden');
+                cookieBanner.classList.add('show');
+            }, 1000);
+        }
+
+        acceptCookiesBtn.addEventListener('click', () => {
+            localStorage.setItem('cookieConsent', 'accepted');
+            cookieBanner.classList.remove('show');
+            setTimeout(() => {
+                cookieBanner.classList.add('hidden');
+            }, 500); // Wait for transition before hiding completely
+        });
+    }
 });

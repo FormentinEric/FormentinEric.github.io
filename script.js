@@ -121,6 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     img.alt = 'Digital twin overview of an intralogistics plant with a robot cell, LGVs and an automated warehouse.';
                     view.append(img);
                     twinEl.classList.add('twin-static');
+                    // the code panel needs no WebGL and no three.js
+                    import('./js/3d/ui/codePanel.js')
+                        .then((c) => c.createCodePanel(twinEl.querySelector('.twin-code')).setState('GoToPick'))
+                        .catch(() => {});
                 }
                 throw err;
             }));

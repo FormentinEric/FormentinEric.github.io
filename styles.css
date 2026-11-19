@@ -408,10 +408,16 @@ ul {
   object-fit: cover;
 }
 
+/* static picture (no WebGL / modules failed): only the picture and the code panel have content */
 .twin-static .twin-toolbar,
-.twin-static .twin-hint {
+.twin-static .twin-hint,
+.twin-static .twin-tabs,
+.twin-static .twin-bottom,
+.twin-static [data-panel="watch"] {
   display: none;
 }
+
+.twin-static[data-tab] [data-panel="code"] { display: block; }
 
 @media (max-width: 900px) {
   .twin-main, .twin-bottom { grid-template-columns: minmax(0, 1fr); }

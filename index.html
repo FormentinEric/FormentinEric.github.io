@@ -121,8 +121,50 @@
 
             <p class="twin-intro">A live digital twin of an intralogistics plant: a robot palletizes, a wrapping line feeds wrapped pallets, and three LGVs carry them to an automated warehouse and to shipping, sharing the aisles through zone-based traffic control.</p>
 
-            <div class="twin glass-panel" id="twin" tabindex="0" role="application" aria-label="Digital twin of an intralogistics plant" aria-describedby="twin-desc">
-                <div class="twin-view"></div>
+            <div class="twin glass-panel" id="twin" tabindex="0" role="application" data-tab="code" aria-label="Digital twin of an intralogistics plant. Keys: 1 to 3 select an LGV, F follows it, Escape returns to the overview, P pauses." aria-describedby="twin-desc">
+                <div class="twin-main">
+                    <div class="twin-view">
+                        <div class="twin-toolbar" role="toolbar" aria-label="Twin controls">
+                            <div class="twin-group">
+                                <button type="button" data-twin="overview" aria-pressed="true">Overview</button>
+                                <button type="button" data-twin="follow" aria-pressed="false">Follow</button>
+                                <button type="button" data-twin="pause" aria-pressed="false">Pause</button>
+                            </div>
+                            <div class="twin-group" role="group" aria-label="Select LGV">
+                                <button type="button" data-lgv="01" aria-pressed="false">LGV-01</button>
+                                <button type="button" data-lgv="02" aria-pressed="true">LGV-02</button>
+                                <button type="button" data-lgv="03" aria-pressed="false">LGV-03</button>
+                            </div>
+                        </div>
+                        <p class="twin-hint" aria-hidden="true">Click an LGV &middot; drag to orbit &middot; keys <kbd>1</kbd>&ndash;<kbd>3</kbd> <kbd>F</kbd> <kbd>Esc</kbd></p>
+                    </div>
+                    <div class="twin-tabs" role="tablist" aria-label="Panels">
+                        <button type="button" role="tab" data-tab="code" aria-selected="true">Code</button>
+                        <button type="button" role="tab" data-tab="watch" aria-selected="false">Watch</button>
+                        <button type="button" role="tab" data-tab="log" aria-selected="false">Log</button>
+                    </div>
+                    <aside class="twin-side">
+                        <section class="twin-panel twin-code-panel" data-panel="code" aria-label="Controller code">
+                            <header class="pc-header">
+                                <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                                <span class="pc-title">LgvController.cs</span>
+                                <span class="illustrative">Illustrative code</span>
+                            </header>
+                            <div class="twin-code"></div>
+                        </section>
+                        <section class="twin-panel" data-panel="watch" aria-label="Watch">
+                            <header class="panel-title">Watch</header>
+                            <div class="twin-watch"></div>
+                        </section>
+                    </aside>
+                </div>
+                <div class="twin-bottom">
+                    <div class="twin-scada" aria-label="Plant KPIs"></div>
+                    <section class="twin-panel" data-panel="log" aria-label="Event log">
+                        <header class="panel-title">Event log</header>
+                        <ol class="twin-log"></ol>
+                    </section>
+                </div>
             </div>
             <p id="twin-desc" class="visually-hidden">Animated 3D model of a plant with a palletizing robot cell, a pallet wrapping line, three laser guided vehicles, an automated pallet warehouse and three shipping bays. The vehicles pick pallets, wait for free traffic zones, drop pallets and go charging when their battery is low.</p>
         </section>

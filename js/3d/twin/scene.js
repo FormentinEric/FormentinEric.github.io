@@ -12,7 +12,7 @@ import { createLGV } from '../models/lgv.js';
 import { createPalletizingCell } from '../models/cell.js';
 import { createWrapper } from '../models/wrapper.js';
 import { createCharger } from '../models/charger.js';
-import { createLoadedPallet, createPallet, PALLET_HEIGHT, CARTON } from '../models/props.js';
+import { createLoadedPallet, createPallet, createCarton, PALLET_HEIGHT, CARTON } from '../models/props.js';
 import { createStackerCrane } from '../models/stackerCrane.js';
 import { NODES, EDGES, STATIONS, ZONES, palletSpot } from './layout.js';
 import { createAsrs } from './asrs.js';
@@ -215,7 +215,9 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
     scene.background = new THREE.Color(0x0a0f18);
     scene.fog = new THREE.Fog(0x0a0f18, 30, 75);
     const { map, roughnessMap } = concreteMaps(16);
-    scene.add(mesh(new THREE.PlaneGeometry(64, 52).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map, roughnessMap, roughness: 0.9, envMapIntensity: 0.6 }), 0, 0, 0, false));
+    const floor = mesh(new THREE.PlaneGeometry(64, 52).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map, roughnessMap, roughness: 0.9, envMapIntensity: 0.6 }), 0, 0, 0, false);
+    floor.name = 'Floor';
+    scene.add(floor);
     scene.add(new THREE.HemisphereLight(0xb9c8ff, 0x1a1e26, 0.45));
     const key = new THREE.DirectionalLight(0xfff1e0, 2.1);
     key.position.set(9, 16, -5);
@@ -433,6 +435,8 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
         return g;
     }
 
+    const obstacles = new Map();     // lgv id → carton lying in its protective field during an alarm
+
     // ---------- pallet flow on fleet events ----------
     function handle(e) {
         if (e.type === 'pick') {
@@ -445,6 +449,17 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
             stationPallets[e.station] = null;
             carried[e.lgv] = wrap;
             lgvs.get(e.lgv)?.setFilm(wrap);
+        } else if (e.type === 'alarm') {
+            // the obstacle: a fallen carton in the protective field, removed when the alarm clears
+            const m = lgvs.get(e.lgv);
+            if (!m) return;
+            if (e.active) {
+                let ob = obstacles.get(e.lgv);
+                if (!ob) { ob = createCarton(7); ob.rotation.set(0.25, 0.6, 0.1); obstacles.set(e.lgv, ob); }
+                const h = m.group.rotation.y;
+                ob.position.set(m.group.position.x + Math.sin(h) * 2.7, CARTON.h / 2 - 0.02, m.group.position.z + Math.cos(h) * 2.7);
+                scene.add(ob);
+            } else obstacles.get(e.lgv)?.removeFromParent();
         } else if (e.type === 'drop') {
             const st = STATIONS[e.station];
             const p = palletSpot(st);
@@ -549,7 +564,7 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
             m.state.lift = s.lift;
             m.state.loaded = s.loaded;
             m.state.battery = Math.max(0, s.battery);
-            m.state.mode = s.state === 'WaitZone' ? 'WAIT' : s.state === 'Charging' ? 'CHARGE' : 'AUTO';
+            m.state.mode = s.state === 'Alarm' ? 'ALARM' : s.state === 'WaitZone' ? 'WAIT' : s.state === 'Charging' ? 'CHARGE' : 'AUTO';
             m.state.mission = s.missionId ? `${s.missionId} ${s.missionType}` : s.state.toUpperCase();
             m.update(dt);
         }

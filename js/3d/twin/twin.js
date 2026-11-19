@@ -102,7 +102,7 @@ export async function mountTwin(root, runner) {
         onStationBlocked: (name, on) => fleet?.setStationBlocked(name, on),
     });
     fleet = createFleet({
-        graph, traffic, missions, stations: STATIONS, lgvIds: LGV_IDS, batteries: [0.92, 0.64, 0.38], seed: 42,
+        graph, traffic, missions, stations: STATIONS, lgvIds: LGV_IDS, batteries: [0.92, 0.64, 0.38], seed: 42, autoAlarms: true,
         onEvent: (e) => {
             plant.handle(e);
             if (e.type === 'drop') drops.push(e.t);
@@ -176,6 +176,67 @@ export async function mountTwin(root, runner) {
         }
     }).observe(view);
 
+    // ---------- SCADA view: unlit, muted plant + LGVs as wireframes coloured by state ----------
+    const STATE_COLORS = { moving: 0x22c55e, waiting: 0xf59e0b, alarm: 0xef4444, idle: 0x9ca3af };
+    const stateMats = Object.fromEntries(Object.entries(STATE_COLORS).map(([k, c]) => [k, new THREE.MeshBasicMaterial({ color: c, wireframe: true })]));
+    const SCADA_BG = new THREE.Color(0x050a12);
+    const mutedCache = new Map();       // lit material → unlit muted copy
+    const swapped = new Map();          // mesh → its own material
+    const lgvOf = new Map();            // mesh → LGV id
+    const scadaBtn = root.querySelector('[data-twin="scada"]');
+    const grid = new THREE.GridHelper(64, 64, 0x22d3ee, 0x16324a);
+    grid.material.transparent = true;
+    grid.material.opacity = 0.35;
+    grid.position.y = 0.002;
+    let scadaOn = false, savedBg = null;
+    const floor = stage.scene.getObjectByName('Floor');
+    const stateKey = (s) => (s.state === 'Alarm' ? 'alarm' : s.state === 'WaitZone' ? 'waiting'
+        : Math.abs(s.speed) > 0.02 || /^(Docking|Undocking|Lifting|Lowering|DockingDrop|UndockingDrop)$/.test(s.state) ? 'moving' : 'idle');
+    function muted(m) {
+        if (!mutedCache.has(m)) {
+            const c = m.color ? m.color.clone().lerp(new THREE.Color(0x0b1422), 0.86) : new THREE.Color(0x101c2b);
+            mutedCache.set(m, new THREE.MeshBasicMaterial({ color: c, map: null }));
+        }
+        return mutedCache.get(m);
+    }
+    function swapIn() {
+        // lit meshes only: zone tiles, safety fields, beams and glows are already unlit and stay as they are
+        stage.scene.traverse((o) => {
+            if (!o.isMesh || swapped.has(o) || Array.isArray(o.material) || o.material.isMeshBasicMaterial || o === grid) return;
+            swapped.set(o, o.material);
+            o.material = lgvOf.has(o) ? stateMats.idle : muted(o.material);
+        });
+    }
+    function setScadaView(on) {
+        if (on === scadaOn) return;
+        scadaOn = on;
+        scadaBtn?.setAttribute('aria-pressed', String(on));
+        root.classList.toggle('twin-scada-on', on);
+        if (on) {
+            lgvOf.clear();
+            for (const [id, m] of plant.lgvs) m.group.traverse((o) => { if (o.isMesh) lgvOf.set(o, id); });
+            savedBg = stage.scene.background;
+            stage.scene.background = SCADA_BG;
+            if (floor) floor.visible = false;          // the grid is the floor of the SCADA view
+            stage.scene.add(grid);
+            swapIn();
+        } else {
+            for (const [o, m] of swapped) o.material = m;
+            swapped.clear();
+            stage.scene.background = savedBg;
+            if (floor) floor.visible = true;
+            grid.removeFromParent();
+        }
+        if (!stage.isLost()) stage.renderOnce();
+    }
+    function updateScada(snap) {
+        swapIn();                         // pallets created since the last frame
+        for (const s of snap) {
+            const mat = stateMats[stateKey(s)];
+            plant.lgvs.get(s.id).group.traverse((o) => { if (swapped.has(o)) o.material = mat; });
+        }
+    }
+
     // ---------- toolbar & keyboard ----------
     let paused = false;
     const pauseBtn = root.querySelector('[data-twin="pause"]');
@@ -188,6 +249,7 @@ export async function mountTwin(root, runner) {
         const b = e.target.closest('button');
         if (!b) return;
         if (b.dataset.twin === 'pause') togglePause();
+        else if (b.dataset.twin === 'scada') setScadaView(!scadaOn);
         else if (b.dataset.twin) setMode(b.dataset.twin);
         else if (b.dataset.lgv) select(b.dataset.lgv);
     });
@@ -199,6 +261,7 @@ export async function mountTwin(root, runner) {
         else if (k === 'f') setMode('follow');
         else if (k === 'escape') setMode('overview');
         else if (k === 'p') togglePause();
+        else if (k === 's') setScadaView(!scadaOn);
         else return;
         e.preventDefault();
     });
@@ -252,6 +315,7 @@ export async function mountTwin(root, runner) {
         const sel = snap.find((s) => s.id === selected);
         ring.position.x = sel.x;
         ring.position.z = sel.z;
+        if (scadaOn) updateScada(snap);
         code.setState(sel.state);
         watch.update(sel);
         const t = fleet.time();
@@ -279,9 +343,9 @@ export async function mountTwin(root, runner) {
     }
     stage.onFrame(frame);
 
-    if (new URLSearchParams(location.search).has('debug3d')) window.__twin = { stage, fleet, traffic, plant, select, setMode, frame };
+    if (new URLSearchParams(location.search).has('debug3d')) window.__twin = { stage, fleet, traffic, plant, select, setMode, setScadaView, frame };
 
-    const result = { stage, fleet, plant, select, dispose: () => stage.dispose() };
+    const result = { stage, fleet, plant, select, setScadaView, dispose: () => stage.dispose() };
     await nextTask();
     select(selected);
     frame(0);

@@ -123,12 +123,13 @@
 
             <div class="twin glass-panel" id="twin" data-tab="code">
                 <div class="twin-main">
-                    <div class="twin-view" tabindex="0" role="application" aria-label="Digital twin of an intralogistics plant. Keys: 1 to 3 select an LGV, F follows it, Escape returns to the overview, P pauses. Drag to orbit, wheel to zoom." aria-describedby="twin-desc">
+                    <div class="twin-view" tabindex="0" role="application" aria-label="Digital twin of an intralogistics plant. Keys: 1 to 3 select an LGV, F follows it, Escape returns to the overview, P pauses, S switches to the SCADA view. Drag to orbit, wheel to zoom." aria-describedby="twin-desc">
                         <div class="twin-toolbar" role="toolbar" aria-label="Twin controls">
                             <div class="twin-group">
                                 <button type="button" data-twin="overview" aria-pressed="true">Overview</button>
                                 <button type="button" data-twin="follow" aria-pressed="false">Follow</button>
                                 <button type="button" data-twin="pause" aria-pressed="false">Pause</button>
+                                <button type="button" data-twin="scada" aria-pressed="false">SCADA</button>
                             </div>
                             <div class="twin-group" role="group" aria-label="Select LGV">
                                 <button type="button" data-lgv="01" aria-pressed="false">LGV-01</button>
@@ -136,7 +137,7 @@
                                 <button type="button" data-lgv="03" aria-pressed="false">LGV-03</button>
                             </div>
                         </div>
-                        <p class="twin-hint" aria-hidden="true">Click an LGV &middot; drag to orbit &middot; <kbd>Ctrl</kbd> + wheel to zoom &middot; keys <kbd>1</kbd>&ndash;<kbd>3</kbd> <kbd>F</kbd> <kbd>Esc</kbd></p>
+                        <p class="twin-hint" aria-hidden="true">Click an LGV &middot; drag to orbit &middot; <kbd>Ctrl</kbd> + wheel to zoom &middot; keys <kbd>1</kbd>&ndash;<kbd>3</kbd> <kbd>F</kbd> <kbd>S</kbd> <kbd>Esc</kbd></p>
                     </div>
                     <div class="twin-tabs" role="tablist" aria-label="Panels">
                         <button type="button" role="tab" id="twin-tab-code" data-tab="code" aria-controls="twin-panel-code" aria-selected="true">Code</button>

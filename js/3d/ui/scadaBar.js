@@ -12,12 +12,14 @@ export function createScadaBar(el) {
         el.append(item);
         items[key] = { item, v };
     }
-    let last = 0;
+    let last = 0, lastAlarms = -1;
     return {
+        /** Refreshes twice a second, and at once when the number of alarms changes. */
         update({ missionsPerHour, online, alarms, asrsFill }) {
             const now = performance.now();
-            if (now - last < 500) return;
+            if (now - last < 500 && alarms === lastAlarms) return;
             last = now;
+            lastAlarms = alarms;
             items.missionsPerHour.v.textContent = String(Math.round(missionsPerHour));
             items.online.v.textContent = online;
             items.alarms.v.textContent = String(alarms);

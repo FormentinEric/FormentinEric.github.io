@@ -413,7 +413,11 @@ export function createLGV({ id = '02', forksSide = 1 } = {}) {
         beaconLight.intensity = flash * 2.5;
 
         // safety fields and blue spot follow the travel direction
-        fieldsFront.visible = v > 0.02;
+        // obstacle alarm: front fields stay on and pulse
+        const alarm = state.mode === 'ALARM';
+        fieldsFront.visible = v > 0.02 || alarm;
+        const k = alarm ? 1 + Math.sin(t * 14) * 0.05 : 1;
+        fieldsFront.scale.set(k, 1, k);
         fieldsRear.visible = v < -0.02;
         spotFront.visible = v > 0.02;
         spotRear.visible = v < -0.02;

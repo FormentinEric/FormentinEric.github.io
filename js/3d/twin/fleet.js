@@ -29,9 +29,10 @@ function zoneSegments(route) {
 }
 
 /**
- * @param {{graph, traffic, missions, stations, lgvIds: string[], batteries?: number[], seed?: number, onEvent?: Function}} opts
+ * @param {{graph, traffic, missions, stations, lgvIds: string[], batteries?: number[], seed?: number, onEvent?: Function,
+ *          autoAlarms?: boolean}} opts  autoAlarms: an obstacle alarm on a random moving LGV every 90 ± 20 s (seeded)
  */
-export function createFleet({ graph, traffic, missions, stations, lgvIds, batteries = [], seed = 1, onEvent = () => {} }) {
+export function createFleet({ graph, traffic, missions, stations, lgvIds, batteries = [], seed = 1, onEvent = () => {}, autoAlarms = false }) {
     let time = 0;
     let selected = lgvIds[0];
     let rngState = seed >>> 0;
@@ -49,7 +50,7 @@ export function createFleet({ graph, traffic, missions, stations, lgvIds, batter
         return {
             id, x: st.dock.x, z: st.dock.z, heading: st.heading, speed: 0, lift: LIFT_TRAVEL, loaded: false,
             battery: batteries[i] ?? 0.9, state: 'Idle', mission: null, station: home, node: st.node,
-            onLane: false, held: new Set(), actions: [], cur: null, waitingFor: null,
+            onLane: false, held: new Set(), actions: [], cur: null, waitingFor: null, alarm: 0,
         };
     });
 
@@ -123,6 +124,18 @@ export function createFleet({ graph, traffic, missions, stations, lgvIds, batter
 
     // ---------- one action, one sub-step ----------
     function run(v, h) {
+        // obstacle in the protective field: stand still (zones stay held), then resume the current action
+        if (v.alarm > 0) {
+            v.alarm -= h;
+            v.speed = 0;
+            v.state = 'Alarm';
+            v.battery -= DRAIN_S * h;
+            if (v.alarm <= 1e-9) {
+                v.alarm = 0;
+                emit('alarm', v.id, `${label(v)} obstacle cleared, resuming`, { active: false });
+            }
+            return;
+        }
         if (!v.cur) {
             v.cur = v.actions.shift() || null;
             if (!v.cur) {
@@ -277,8 +290,28 @@ export function createFleet({ graph, traffic, missions, stations, lgvIds, batter
         }
     }
 
+    // ---------- obstacle alarms ----------
+    function triggerAlarm(id, seconds = 3) {
+        const v = fleet.find((f) => f.id === id);
+        if (!v || v.alarm > 0) return false;
+        v.alarm = seconds;
+        v.speed = 0;
+        v.state = 'Alarm';
+        emit('alarm', v.id, `${label(v)} ALARM: obstacle in protective field`, { active: true });
+        return true;
+    }
+    const nextGap = () => 90 + (rng() * 40 - 20);
+    let nextAlarm = autoAlarms ? nextGap() : Infinity;
+
     function tick(h) {
         time += h;
+        if (time >= nextAlarm) {
+            const moving = fleet.filter((v) => v.speed > 0.3 && v.alarm <= 0);
+            if (moving.length) {
+                triggerAlarm(moving[Math.floor(rng() * moving.length)].id, 3);
+                nextAlarm = time + nextGap();
+            } else nextAlarm = time + 5;        // nobody moving: try again shortly
+        }
         assign();
         for (const v of fleet) run(v, h);
     }
@@ -296,6 +329,8 @@ export function createFleet({ graph, traffic, missions, stations, lgvIds, batter
         select(id) { selected = id; },
         /** The plant marks a station as not ready (true) or ready again (false); nobody reserves it meanwhile. */
         setStationBlocked(name, on) { if (on) blocked.add(name); else blocked.delete(name); },
+        /** Obstacle in the protective field of LGV `id`: it stops for `seconds`, then resumes. */
+        triggerAlarm,
         selected: () => selected,
         rng,
         snapshot: () => fleet.map((v) => ({

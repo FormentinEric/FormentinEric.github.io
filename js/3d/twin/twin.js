@@ -310,10 +310,22 @@ export async function mountTwin(root, runner) {
     syncEngaged(engaged());
     view.addEventListener('focusin', () => syncEngaged(true));
     view.addEventListener('focusout', (e) => syncEngaged(view.contains(e.relatedTarget)));
-    canvas.addEventListener('pointerdown', () => {
+    // mouse/pen engage on press; touch only on a real tap, so a page-scroll swipe that starts on the twin
+    // does not turn every later swipe into an orbit
+    const engage = () => {
         if (!engaged()) view.focus({ preventScroll: true });
         syncEngaged(engaged());          // focus events do not fire while the window itself is unfocused
+    };
+    let touchDown = null;
+    canvas.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'touch') touchDown = { x: e.clientX, y: e.clientY };
+        else engage();
     });
+    canvas.addEventListener('pointerup', (e) => {
+        if (e.pointerType === 'touch' && touchDown && Math.hypot(e.clientX - touchDown.x, e.clientY - touchDown.y) <= 6) engage();
+        touchDown = null;
+    });
+    canvas.addEventListener('pointercancel', () => { touchDown = null; });
     // capture on the parent runs before the controls' own wheel listener on the canvas
     view.addEventListener('wheel', (e) => { controls.enableZoom = engaged() || e.ctrlKey; }, { capture: true, passive: true });
 
@@ -389,7 +401,8 @@ export async function mountTwin(root, runner) {
     }
     if (!prefersReducedMotion() && !stage.isLost()) {
         runner.register('twin', stage);
-        stopVisibility = whenVisible(view, () => runner.request('twin'), () => runner.release('twin'));
+        // starts once 40 % of the view is on screen: the hero above has finished assembling by then
+        stopVisibility = whenVisible(view, () => runner.request('twin'), () => runner.release('twin'), '0px', 0.4);
     }
 
     return result;

@@ -39,6 +39,8 @@ export function showTwinFallback(root) {
     const view = root.querySelector('.twin-view');
     if (!view || view.querySelector('.twin-fallback')) return;
     view.querySelector('canvas')?.remove();
+    // a still picture is not an application: plain content for screen readers and keyboard
+    for (const a of ['role', 'tabindex', 'aria-label', 'aria-describedby']) view.removeAttribute(a);
     const img = document.createElement('img');
     img.className = 'twin-fallback';
     img.src = 'assets/twin-fallback.webp';
@@ -187,8 +189,9 @@ export async function mountTwin(root, runner) {
         else if (b.dataset.twin) setMode(b.dataset.twin);
         else if (b.dataset.lgv) select(b.dataset.lgv);
     });
-    root.addEventListener('keydown', (e) => {
+    view.addEventListener('keydown', (e) => {
         if (e.target.closest('button')) return;          // buttons handle their own Enter/Space
+        if (e.ctrlKey || e.metaKey || e.altKey) return;  // leave browser shortcuts alone (Ctrl+F, ...)
         const k = e.key.toLowerCase();
         if (['1', '2', '3'].includes(k)) select(LGV_IDS[Number(k) - 1]);
         else if (k === 'f') setMode('follow');
@@ -198,14 +201,45 @@ export async function mountTwin(root, runner) {
         e.preventDefault();
     });
 
-    // mobile tabs (Code / Watch / Log)
-    const tabs = [...root.querySelectorAll('[data-tab]')];
+    // mobile tabs (Code / Watch / Log): ARIA tabs pattern with roving tabindex and arrow keys
+    const tabs = [...root.querySelectorAll('[role="tab"][data-tab]')];
+    function selectTab(t) {
+        root.dataset.tab = t.dataset.tab;
+        for (const o of tabs) {
+            o.setAttribute('aria-selected', String(o === t));
+            o.tabIndex = o === t ? 0 : -1;
+        }
+    }
     for (const t of tabs) {
-        t.addEventListener('click', () => {
-            root.dataset.tab = t.dataset.tab;
-            for (const o of tabs) o.setAttribute('aria-selected', String(o === t));
+        t.addEventListener('click', () => selectTab(t));
+        t.addEventListener('keydown', (e) => {
+            const i = tabs.indexOf(t);
+            const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+            if (j === undefined) return;
+            e.preventDefault();
+            const next = tabs[(j + tabs.length) % tabs.length];
+            selectTab(next);
+            next.focus();
         });
     }
+
+    // ---------- page scroll vs. orbit ----------
+    // The page keeps the wheel and one-finger vertical swipes until the user engages the twin
+    // (click/tap or Tab into the view); Ctrl + wheel always zooms.
+    if (prefersReducedMotion()) controls.enabled = false;    // still picture: nothing to orbit
+    const engaged = () => view.contains(document.activeElement);
+    function syncEngaged(on) {
+        canvas.style.touchAction = !controls.enabled ? 'auto' : on ? 'none' : 'pan-y';
+    }
+    syncEngaged(engaged());
+    view.addEventListener('focusin', () => syncEngaged(true));
+    view.addEventListener('focusout', (e) => syncEngaged(view.contains(e.relatedTarget)));
+    canvas.addEventListener('pointerdown', () => {
+        if (!engaged()) view.focus({ preventScroll: true });
+        syncEngaged(engaged());          // focus events do not fire while the window itself is unfocused
+    });
+    // capture on the parent runs before the controls' own wheel listener on the canvas
+    view.addEventListener('wheel', (e) => { controls.enableZoom = engaged() || e.ctrlKey; }, { capture: true, passive: true });
 
     // ---------- frame ----------
     const followPrev = new THREE.Vector3();

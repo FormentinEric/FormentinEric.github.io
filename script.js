@@ -113,6 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // modules failed to load: still show a picture of the twin
                 const view = twinEl.querySelector('.twin-view');
                 if (view && !view.querySelector('img')) {
+                    view.querySelector('canvas')?.remove();
+                    for (const a of ['role', 'tabindex', 'aria-label', 'aria-describedby']) view.removeAttribute(a);
                     const img = document.createElement('img');
                     img.className = 'twin-fallback';
                     img.src = 'assets/twin-fallback.webp';

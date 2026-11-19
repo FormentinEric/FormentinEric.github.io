@@ -127,4 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lazy3d(document.getElementById('game-canvas-container'), (runner) =>
         import('./js/3d/game.js').then((m) => m.mountGame(document.getElementById('game-canvas-container'), runner)));
+
+    // --- 5. Hero point cloud (WebGL2, no three.js): after the load event, so it never competes with the LCP ---
+    const mountHero = () => import('./js/hero.js')
+        .then((m) => m.mountHero(document.getElementById('hero')))
+        .catch((err) => console.warn('Hero background disabled:', err && err.message ? err.message : err));
+    if (document.readyState === 'complete') setTimeout(mountHero, 0);
+    else window.addEventListener('load', () => setTimeout(mountHero, 0), { once: true });
 });

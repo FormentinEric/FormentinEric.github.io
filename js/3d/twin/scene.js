@@ -1,6 +1,6 @@
 // Digital twin plant: environment, floor markings from the path graph, zone tiles, robot cell (L1),
-// wrapped-pallet line (L2), AS/RS racks with IN/OUT conveyors, shipping bays, charger, parking,
-// LGV models driven by fleet snapshots and the pallet flow driven by fleet pick/drop events.
+// wrapped-pallet line (L2), AS/RS (racks, stacker crane, IN/OUT conveyors with lift tables), shipping bays,
+// charger, parking, LGV models driven by fleet snapshots and the pallet flow driven by fleet pick/drop events.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
@@ -10,14 +10,29 @@ import { mergeStatic } from '../core/merge.js';
 import { nextTask } from '../core/yield.js';
 import { createLGV } from '../models/lgv.js';
 import { createPalletizingCell } from '../models/cell.js';
-import { createLoadedPallet, createPallet, PALLET_HEIGHT } from '../models/props.js';
+import { createLoadedPallet, createPallet, PALLET_HEIGHT, CARTON } from '../models/props.js';
+import { createStackerCrane } from '../models/stackerCrane.js';
 import { NODES, EDGES, STATIONS, ZONES, palletSpot } from './layout.js';
+import { createAsrs } from './asrs.js';
 
 const L2_PERIOD = 40;     // s between wrapped pallets on line 2
-const OUT_PERIOD = 32;    // s between AS/RS retrievals
+const OUT_PERIOD = 32;    // s between AS/RS retrievals at 50 % fill (shorter when fuller, longer when emptier)
 const TRUCK_PERIOD = 75;  // s between truck departures (or earlier if a bay is full)
 const PIT_SPEED = 0.35;   // m/s pallet conveyors
 const ZONE_COLORS = { owned: 0x22d3ee, queued: 0xff4d4d };
+
+// AS/RS: 14 single-pallet bays × 5 beam levels on both sides of one stacker-crane aisle
+const RACK = { x0: -8.4, pitch: 1.2, bays: 14, levels: [0.75, 2.15, 3.55, 4.95, 6.35], height: 7.8, depth: 1.0, front: -6.2, back: -8.8 };
+const RACK_X1 = RACK.x0 + RACK.bays * RACK.pitch;
+const AISLE_Z = (RACK.front - RACK.depth + RACK.back) / 2;                       // -8.0
+const SLOT_Z = [RACK.front - RACK.depth / 2, RACK.back - RACK.depth / 2];        // side 0 (loop side), side 1
+const SLOT_Y0 = RACK.levels[0] + 0.06;     // pallet bottom on the first beam level = lift-table top position
+const CRANE_HEIGHT = 7.64;                 // guide rollers straddle the top rail hung under the rack ties
+const TABLE_SPEED = 0.3;                   // m/s lift tables
+const PALLET_GAP = 1.35;                   // m between queued pallets on a conveyor
+const slotKey = (s) => `${s.bay}/${s.level}/${s.side}`;
+const slotPos = (s) => ({ x: RACK.x0 + (s.bay + 0.5) * RACK.pitch, y: RACK.levels[s.level] + 0.06, z: SLOT_Z[s.side] });
+const slotName = (s) => `${s.side ? 'B' : 'A'}${String(s.bay + 1).padStart(2, '0')}-${s.level + 1}`;
 
 function mesh(geo, mat, x = 0, y = 0, z = 0, cast = true) {
     const m = new THREE.Mesh(geo, mat);
@@ -69,32 +84,100 @@ function pitConveyor(M, x, z0, z1) {
     return g;
 }
 
-function rackBlock(M, { x0, x1, zFront, depth, levels, height }) {
+/** One rack row (both frames of its depth). `skip`: 'bay/level' beam pairs left out (conveyor transfer positions). */
+function rackBlock(M, zFront, skip = new Set()) {
+    const { x0, pitch, bays, levels, height, depth } = RACK;
     const g = new THREE.Group();
-    const bay = 2.75;
-    const xs = [];
-    for (let x = x0; x <= x1 + 1e-6; x += bay) xs.push(x);
     const postGeo = new THREE.BoxGeometry(0.09, height, 0.07);
-    for (const x of xs) {
-        for (const dz of [0, -depth]) g.add(mesh(postGeo, M.rackBlue, x, height / 2, zFront + dz));
-        for (let k = 0; k < Math.floor(height / 1.05); k++) {
-            const b = mesh(new THREE.BoxGeometry(0.03, 1.15, 0.03), M.rackBlue, x, 0.6 + k * 1.05, zFront - depth / 2);
-            b.rotation.x = k % 2 ? 0.95 : -0.95;
+    const braceGeo = new THREE.BoxGeometry(0.03, 1.15, 0.03);
+    const plateGeo = new THREE.BoxGeometry(0.16, 0.012, 0.14);
+    for (let k = 0; k <= bays; k++) {
+        const x = x0 + k * pitch;
+        for (const dz of [0, -depth]) {
+            g.add(mesh(postGeo, M.rackBlue, x, height / 2, zFront + dz));
+            g.add(mesh(plateGeo, M.steelDark, x, 0.006, zFront + dz, false));
+        }
+        for (let j = 0; j < Math.floor(height / 1.05); j++) {
+            const b = mesh(braceGeo, M.rackBlue, x, 0.6 + j * 1.05, zFront - depth / 2);
+            b.rotation.x = j % 2 ? 0.95 : -0.95;
             g.add(b);
         }
     }
-    const beamGeo = new THREE.BoxGeometry(bay - 0.09, 0.12, 0.05);
-    for (let i = 0; i < xs.length - 1; i++) {
-        for (const y of levels) for (const dz of [0, -depth]) g.add(mesh(beamGeo, M.rackOrange, (xs[i] + xs[i + 1]) / 2, y, zFront + dz));
+    const beamGeo = new THREE.BoxGeometry(pitch - 0.09, 0.12, 0.05);
+    for (let b = 0; b < bays; b++) for (let l = 0; l < levels.length; l++) {
+        if (skip.has(`${b}/${l}`)) continue;
+        for (const dz of [0, -depth]) g.add(mesh(beamGeo, M.rackOrange, x0 + (b + 0.5) * pitch, levels[l], zFront + dz));
     }
-    const slots = [];
-    for (let i = 0; i < xs.length - 1; i++) for (const y of [0.06, ...levels.map((l) => l + 0.06)]) {
-        for (let p = -1; p <= 1; p++) slots.push({ x: (xs[i] + xs[i + 1]) / 2 + p * 0.88, y, z: zFront - depth / 2 });
-    }
-    return { group: g, slots };
+    return g;
 }
 
-export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog }) {
+/** Floor rail with end buffers, top guide rail hung under ties across the rack tops, end portal. */
+function craneRails(M) {
+    const g = new THREE.Group();
+    const bx0 = RACK.x0 - 0.6, bx1 = RACK_X1 + 1.6;
+    g.add(mesh(new THREE.BoxGeometry(bx1 - bx0, 0.02, 0.34), M.steelDark, (bx0 + bx1) / 2, 0.01, AISLE_Z, false));
+    g.add(mesh(new THREE.BoxGeometry(bx1 - bx0, 0.09, 0.07), M.steelWorn, (bx0 + bx1) / 2, 0.065, AISLE_Z));
+    for (const x of [bx0 + 0.15, bx1 - 0.15]) g.add(mesh(new THREE.BoxGeometry(0.3, 0.4, 0.5), M.hazard, x, 0.2, AISLE_Z));
+    const tx1 = RACK_X1 + 0.5;
+    const span = (RACK.front - RACK.depth) - RACK.back + 0.14;
+    const topY = RACK.height + 0.04;
+    for (let x = RACK.x0; x <= RACK_X1 + 1e-6; x += 2 * RACK.pitch) g.add(mesh(new THREE.BoxGeometry(0.08, 0.08, span), M.steelDark, x, topY, AISLE_Z));
+    g.add(mesh(new THREE.BoxGeometry(tx1 - RACK.x0, 0.12, 0.08), M.steelDark, (RACK.x0 + tx1) / 2, topY - 0.1, AISLE_Z));
+    // end portal carrying the rail past the last rack frame
+    for (const dz of [-1, 1]) g.add(mesh(new THREE.BoxGeometry(0.12, topY, 0.12), M.rackBlue, tx1, topY / 2, AISLE_Z + dz * (span / 2 - 0.06)));
+    g.add(mesh(new THREE.BoxGeometry(0.12, 0.08, span), M.steelDark, tx1, topY, AISLE_Z));
+    return g;
+}
+
+/** Scissor lift table in a pit at a conveyor end; `load` (if any) rides on its top. */
+function createLiftTable(M, x, z) {
+    const group = new THREE.Group();
+    group.position.set(x, 0, z);
+    group.add(mesh(new THREE.BoxGeometry(1.22, 0.02, 1.34), M.steelDark, 0, 0.004, 0, false));
+    for (const s of [-1, 1]) group.add(mesh(new THREE.BoxGeometry(0.05, 0.05, 1.34), M.fenceYellow, s * 0.64, 0.025, 0));
+    const top = new THREE.Group();
+    top.add(mesh(new THREE.BoxGeometry(1.08, 0.05, 1.24), M.lgvYellow, 0, -0.045, 0));
+    const roller = new THREE.CylinderGeometry(0.025, 0.025, 1.0, 10).rotateZ(Math.PI / 2);
+    for (let k = -3; k <= 3; k++) top.add(mesh(roller, M.aluminium, 0, -0.025, k * 0.17, false));
+    for (const s of [-1, 1]) top.add(mesh(new THREE.BoxGeometry(0.04, 0.07, 1.24), M.steelDark, s * 0.56, -0.02, 0));
+    mergeStatic(top);
+    group.add(top);
+    const armGeo = new THREE.BoxGeometry(0.05, 0.04, 1.1);
+    const arms = [];
+    for (const ax of [-0.42, 0.42]) for (const sgn of [-1, 1]) {
+        const a = mesh(armGeo, M.steelDark, ax, 0.03, 0);
+        group.add(a);
+        arms.push({ m: a, sgn });
+    }
+    const t = { group, h: 0, target: 0, load: null };
+    t.update = (dt) => {
+        const d = t.target - t.h;
+        t.h += Math.sign(d) * Math.min(Math.abs(d), TABLE_SPEED * dt);
+        top.position.y = t.h;
+        const lift = Math.max(0, t.h - 0.05);
+        const th = Math.asin(Math.min(1, lift / 1.1));
+        for (const { m, sgn } of arms) { m.position.y = 0.03 + lift / 2; m.rotation.x = sgn * th; }
+        if (t.load) t.load.position.y = t.h;
+    };
+    t.at = (y) => t.target === y && Math.abs(t.h - y) < 1e-3;
+    return t;
+}
+
+/** 2 × 3 cartons × 3 layers as one box, the carton texture tiled once per carton face. */
+function cartonBlockGeometry() {
+    const g = new THREE.BoxGeometry(2 * CARTON.w, 3 * CARTON.h, 3 * CARTON.d);
+    const uv = g.attributes.uv;
+    const rep = [[3, 3], [3, 3], [2, 3], [2, 3], [2, 3], [2, 3]];   // faces +x −x +y −y +z −z: cartons along (u, v)
+    for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) uv.setXY(f * 4 + k, uv.getX(f * 4 + k) * rep[f][0], uv.getY(f * 4 + k) * rep[f][1]);
+    return g;
+}
+
+/**
+ * @param {{lgvIds: string[], onPalletReady: Function, onPalletAtOut: Function, onLog: Function,
+ *          onStationBlocked?: (station: string, blocked: boolean) => void}} opts
+ *        onStationBlocked: a P/D cannot take a pallet now (e.g. the IN conveyor is backed up to it)
+ */
+export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog, onStationBlocked = () => {} }) {
     const { scene, renderer } = stage;
     const M = materials();
     await nextTask();
@@ -185,30 +268,64 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
     statics.add(pitConveyor(M, L2.x, L2.z - 0.6, L2.z + 3.6));
     const hatch = new THREE.MeshStandardMaterial({ map: hazardTexture(3, 1), roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -1 });
     statics.add(strip(L2.x - 0.8, L2.z + 3.9, L2.x + 0.8, L2.z + 3.9, 0.5, hatch));
-    let l2Timer = 6, l2Moving = null;
+    let l2Timer = 6, l2Moving = null, l2Hold = false;
 
     await nextTask();
-    // ---------- AS/RS: racks + IN/OUT pit conveyors ----------
+    // ---------- AS/RS: rack rows, crane aisle, IN/OUT conveyors ending on lift tables ----------
     const IN = palletSpot(STATIONS.ASRS_IN), OUT = palletSpot(STATIONS.ASRS_OUT);
-    const levels = [1.6, 3.2, 4.8, 6.4];
-    const front = rackBlock(M, { x0: -8.25, x1: 8.25, zFront: -6.2, depth: 1.0, levels, height: 7.8 });
-    const back = rackBlock(M, { x0: -8.25, x1: 8.25, zFront: -8.8, depth: 1.0, levels, height: 7.8 });
-    statics.add(front.group, back.group);
-    statics.add(pitConveyor(M, IN.x, IN.z + 0.6, -6.9), pitConveyor(M, OUT.x, OUT.z + 0.6, -6.9));
-    const slots = [...front.slots, ...back.slots].filter((s) => s.y > 0.1 || (Math.abs(s.x - IN.x) > 0.9 && Math.abs(s.x - OUT.x) > 0.9));
-    const palletIM = new THREE.InstancedMesh(createPallet().geometry, M.wood, slots.length);
-    const blockIM = new THREE.InstancedMesh(new RoundedBoxGeometry(0.78, 1, 1.18, 2, 0.02), new THREE.MeshStandardMaterial({ map: cartonTexture(21, '#b98a5b'), roughness: 0.8 }), slots.length);
+    const bayOf = (x) => Math.round((x - RACK.x0) / RACK.pitch - 0.5);
+    const inBay = bayOf(IN.x), outBay = bayOf(OUT.x);
+    const exclude = [{ bay: inBay, level: 0, side: 0 }, { bay: outBay, level: 0, side: 0 }];
+    const asrs = createAsrs({ bays: RACK.bays, levels: RACK.levels.length, sides: 2, prefill: 0.55, inBay, exclude, seed: 11 });
+    statics.add(rackBlock(M, RACK.front, new Set(exclude.map((e) => `${e.bay}/${e.level}`))), rackBlock(M, RACK.back), craneRails(M));
+    const TRANSFER_Z = SLOT_Z[0];
+    statics.add(pitConveyor(M, IN.x, IN.z + 0.6, TRANSFER_Z + 0.68), pitConveyor(M, OUT.x, OUT.z + 0.6, TRANSFER_Z + 0.68));
+    const inTable = createLiftTable(M, IN.x, TRANSFER_Z);
+    const outTable = createLiftTable(M, OUT.x, TRANSFER_Z);
+    outTable.h = outTable.target = SLOT_Y0;          // the OUT table waits up, empty, for the crane
+    scene.add(inTable.group, outTable.group);
+    const crane = createStackerCrane({ height: CRANE_HEIGHT, x0: RACK.x0 - 0.5, x1: RACK_X1 + 0.5, reach: SLOT_Z[0] - AISLE_Z, y0: SLOT_Y0 });
+    crane.group.position.z = AISLE_Z;
+    crane.festoon.position.z = AISLE_Z;
+    scene.add(crane.group, crane.festoon);
+
+    await nextTask();
+    // stored pallets: one instance per slot (zero scale when empty), plain or stretch-wrapped carton blocks
+    const slotIdx = new Map();
+    const skipSlots = new Set(exclude.map(slotKey));
+    for (let bay = 0; bay < RACK.bays; bay++) for (let level = 0; level < RACK.levels.length; level++) for (let side = 0; side < 2; side++) {
+        const k = slotKey({ bay, level, side });
+        if (!skipSlots.has(k)) slotIdx.set(k, slotIdx.size);
+    }
+    const cartonMap = cartonTexture(21, '#b98a5b');
+    cartonMap.wrapS = cartonMap.wrapT = THREE.RepeatWrapping;
+    const blockGeo = cartonBlockGeometry();
+    const palletIM = new THREE.InstancedMesh(createPallet().geometry, M.wood, slotIdx.size);
+    const bareIM = new THREE.InstancedMesh(blockGeo, new THREE.MeshStandardMaterial({ map: cartonMap, roughness: 0.8 }), slotIdx.size);
+    const wrapIM = new THREE.InstancedMesh(blockGeo, new THREE.MeshPhysicalMaterial({ map: cartonMap, color: 0xe4ebf3, roughness: 0.35, clearcoat: 1, clearcoatRoughness: 0.12 }), slotIdx.size);
+    for (const im of [palletIM, bareIM, wrapIM]) { im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; scene.add(im); }
     const o = new THREE.Object3D();
-    slots.forEach((s, i) => {
-        const h = 0.75 + ((i * 37) % 10) / 20;
-        o.position.set(s.x, s.y, s.z); o.scale.set(1, 1, 1); o.updateMatrix(); palletIM.setMatrixAt(i, o.matrix);
-        o.position.set(s.x, s.y + PALLET_HEIGHT + h / 2, s.z); o.scale.set(1, h, 1); o.updateMatrix(); blockIM.setMatrixAt(i, o.matrix);
-    });
-    for (const im of [palletIM, blockIM]) { im.castShadow = true; im.receiveShadow = true; scene.add(im); }
-    let stored = Math.round(slots.length * 0.55);
-    const showStored = () => { palletIM.count = blockIM.count = Math.min(stored, slots.length); };
-    showStored();
-    const inbound = [];        // pallets riding into the racks
+    /** wrap: true / false = a stored pallet (wrapped or not), null = empty slot */
+    function setSlot(slot, wrap) {
+        const i = slotIdx.get(slotKey(slot));
+        const p = slotPos(slot);
+        const put = (im, on, y) => {
+            o.position.set(p.x, y, p.z);
+            o.scale.setScalar(on ? 1 : 0);
+            o.updateMatrix();
+            im.setMatrixAt(i, o.matrix);
+            im.instanceMatrix.needsUpdate = true;
+        };
+        put(palletIM, wrap !== null, p.y);
+        put(bareIM, wrap === false, p.y + PALLET_HEIGHT + 1.5 * CARTON.h);
+        put(wrapIM, wrap === true, p.y + PALLET_HEIGHT + 1.5 * CARTON.h);
+    }
+    for (const k of slotIdx.keys()) { const [bay, level, side] = k.split('/').map(Number); setSlot({ bay, level, side }, null); }
+    const wraps = new Map();      // pallet id → stretch-wrapped
+    asrs.snapshot().forEach((s, i) => { const w = (i * 7) % 5 > 1; wraps.set(s.palletId, w); setSlot(s, w); });
+    const stock = () => Math.round(asrs.fill() * asrs.capacity);
+    const inbound = [];           // pallets on the IN conveyor, oldest first
+    let inBlocked = false, nextPalletId = 1001;
     let outTimer = 8, outMoving = null;
 
     await nextTask();
@@ -284,9 +401,55 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
             const p = palletSpot(st);
             const g = newLoad(carried[e.lgv] ?? true, p.x, p.z, st.heading);
             delete carried[e.lgv];
-            if (e.station === 'ASRS_IN') inbound.push(g);
+            if (e.station === 'ASRS_IN') { g.userData.id = `P${nextPalletId++}`; inbound.push(g); }
             else if (bays[e.station]) bays[e.station].push({ g, target: BAY_SLOTS[bays[e.station].length] ?? 5.0 });
         }
+    }
+
+    // ---------- stacker crane jobs ----------
+    const outPeriod = () => OUT_PERIOD * Math.min(1.2, Math.max(0.45, 1.5 - asrs.fill()));
+    function storeJob() {
+        const g = inTable.load;
+        const id = g.userData.id;
+        const slot = asrs.store(id);
+        if (!slot) return;
+        wraps.set(id, g.userData.wrap);
+        const p = slotPos(slot);
+        crane.move({
+            from: { x: IN.x, y: SLOT_Y0, side: 1 },
+            to: { x: p.x, y: p.y, side: slot.side ? -1 : 1 },
+            take: () => { inTable.load = null; inTable.target = 0; return g; },
+            put: (l) => {
+                l.removeFromParent();
+                setSlot(slot, wraps.get(id));
+                onLog({ type: 'drop', text: `AS/RS stored ${id} in ${slotName(slot)} (${stock()} in stock)` });
+            },
+        });
+    }
+    function retrieveJob() {
+        const r = asrs.retrieve();
+        if (!r) return;
+        outTimer = outPeriod();
+        const p = slotPos(r.slot);
+        const wrap = wraps.get(r.palletId) ?? true;
+        wraps.delete(r.palletId);
+        crane.move({
+            from: { x: p.x, y: p.y, side: r.slot.side ? -1 : 1 },
+            to: { x: OUT.x, y: SLOT_Y0, side: 1 },
+            take: () => {
+                setSlot(r.slot, null);
+                const g = newLoad(wrap, p.x, p.z, Math.PI);
+                g.position.y = p.y;
+                g.userData.id = r.palletId;
+                return g;
+            },
+            put: (l) => {
+                scene.attach(l);
+                outTable.load = l;
+                outTable.target = 0;
+                onLog({ type: 'pick', text: `AS/RS retrieved ${r.palletId} from ${slotName(r.slot)}` });
+            },
+        });
     }
 
     function update(dt, snapshot, zones) {
@@ -310,7 +473,11 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
         // robot cell
         cell.update(dt);
         // line 2
-        if (!stationPallets.L2 && !l2Moving && !docked.has('L2') && (l2Timer -= dt) <= 0) {
+        // line 2 holds while the AS/RS is nearly full (hysteresis 90 % → 80 %), like a WMS buffer limit
+        const fillNow = asrs.fill();
+        if (!l2Hold && fillNow >= 0.9) { l2Hold = true; onLog({ type: 'mission', text: 'Line 2 on hold: AS/RS 90 % full' }); }
+        else if (l2Hold && fillNow <= 0.8) { l2Hold = false; onLog({ type: 'mission', text: 'Line 2 resumed' }); }
+        if (!l2Hold && !stationPallets.L2 && !l2Moving && !docked.has('L2') && (l2Timer -= dt) <= 0) {
             l2Moving = newLoad(true, L2.x, L2.z + 3.4, 0);
             l2Timer = L2_PERIOD;
         }
@@ -318,18 +485,37 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
             l2Moving.position.z = Math.max(L2.z, l2Moving.position.z - PIT_SPEED * dt);
             if (l2Moving.position.z <= L2.z) { stationPallets.L2 = l2Moving; l2Moving = null; onPalletReady('L2'); }
         }
-        // AS/RS in: ride into the rack, then stored
-        for (let i = inbound.length - 1; i >= 0; i--) {
-            const g = inbound[i];
-            g.position.z -= PIT_SPEED * dt;
-            if (g.position.z < -6.6) { scene.remove(g); inbound.splice(i, 1); stored++; showStored(); onLog({ type: 'drop', text: `AS/RS stored pallet (${stored} in stock)` }); }
+        // AS/RS IN: the conveyor feeds the lift table (pallets queue behind it), the table lifts to the crane
+        inTable.update(dt);
+        outTable.update(dt);
+        const inFree = !inTable.load && inTable.at(0);
+        for (let i = 0; i < inbound.length; i++) {
+            const stop = i > 0 ? inbound[i - 1].position.z + PALLET_GAP : inFree ? TRANSFER_Z : TRANSFER_Z + PALLET_GAP;
+            inbound[i].position.z = Math.max(stop, inbound[i].position.z - PIT_SPEED * dt);
         }
-        // AS/RS out: retrieve to the OUT P/D
-        if (!stationPallets.ASRS_OUT && !outMoving && !docked.has('ASRS_OUT') && stored > 0 && (outTimer -= dt) <= 0) {
-            stored--; showStored();
-            outMoving = newLoad(Math.random() > 0.4, OUT.x, -6.6, Math.PI);
-            outTimer = OUT_PERIOD;
+        if (inFree && inbound.length && inbound[0].position.z <= TRANSFER_Z + 1e-6) {
+            inTable.load = inbound.shift();
+            inTable.target = SLOT_Y0;
         }
+        // a pallet still on the IN P/D blocks the next drop there
+        const inBusy = inbound.some((g) => g.position.z > IN.z - 1.25);
+        if (inBusy !== inBlocked) { inBlocked = inBusy; onStationBlocked('ASRS_IN', inBusy); }
+        // crane: stores first; retrieves on its (fill-dependent) period, first when the rack is getting full
+        crane.update(dt);
+        outTimer -= dt;
+        if (!crane.busy()) {
+            const fill = asrs.fill();
+            const inReady = inTable.load && inTable.at(SLOT_Y0) && fill < 1;
+            const outReady = !outTable.load && outTable.at(SLOT_Y0) && outTimer <= 0 && fill > 0;
+            if (inReady && !(outReady && fill > 0.85)) storeJob();
+            else if (outReady) retrieveJob();
+        }
+        // AS/RS OUT: the table lowers the retrieved pallet; the conveyor brings it to the P/D once that is clear
+        if (outTable.load && outTable.at(0) && !stationPallets.ASRS_OUT && !outMoving && !docked.has('ASRS_OUT')) {
+            outMoving = outTable.load;
+            outTable.load = null;
+        }
+        if (!outTable.load && outTable.target === 0 && (!outMoving || outMoving.position.z > TRANSFER_Z + 1.3)) outTable.target = SLOT_Y0;
         if (outMoving) {
             outMoving.position.z = Math.min(OUT.z, outMoving.position.z + PIT_SPEED * dt);
             if (outMoving.position.z >= OUT.z) { stationPallets.ASRS_OUT = outMoving; outMoving = null; onPalletAtOut(); }
@@ -355,5 +541,5 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
         }
     }
 
-    return { lgvs, handle, update, stored: () => stored, capacity: slots.length };
+    return { lgvs, handle, update, stored: stock, capacity: asrs.capacity, asrs, crane };
 }

@@ -99,6 +99,7 @@ export async function mountTwin(root, runner) {
         onPalletReady: (s) => missions.palletReady(s),
         onPalletAtOut: () => missions.palletAvailableAtOut(),
         onLog: (e) => log.push({ t: fleet ? fleet.time() : 0, ...e }),
+        onStationBlocked: (name, on) => fleet?.setStationBlocked(name, on),
     });
     fleet = createFleet({
         graph, traffic, missions, stations: STATIONS, lgvIds: LGV_IDS, batteries: [0.92, 0.64, 0.38], seed: 42,

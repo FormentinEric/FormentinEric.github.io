@@ -73,7 +73,8 @@ export function createFleet({ graph, traffic, missions, stations, lgvIds, batter
         traffic.release(zone, v.id);
         emit('zone', v.id, `Zone ${zone} released by ${label(v)}`, { zone });
     }
-    const stationFree = (name, v) => !stationRes.has(name) || stationRes.get(name) === v.id;
+    const blocked = new Set();               // stations the plant marks as not ready (e.g. P/D still occupied)
+    const stationFree = (name, v) => stationRes.get(name) === v.id || (!blocked.has(name) && !stationRes.has(name));
 
     // ---------- action helpers ----------
     function rotateTowards(v, target, h) {
@@ -293,6 +294,8 @@ export function createFleet({ graph, traffic, missions, stations, lgvIds, batter
         },
         time: () => time,
         select(id) { selected = id; },
+        /** The plant marks a station as not ready (true) or ready again (false); nobody reserves it meanwhile. */
+        setStationBlocked(name, on) { if (on) blocked.add(name); else blocked.delete(name); },
         selected: () => selected,
         rng,
         snapshot: () => fleet.map((v) => ({

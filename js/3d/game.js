@@ -1,7 +1,7 @@
 // Interactive LGV simulator (gameplay unchanged from block 1, now on r187 modules + new LGV model).
 import * as THREE from 'three';
 import { createStage } from './core/stage.js';
-import { whenVisible } from './core/visible.js';
+import { whenVisible, prefersReducedMotion } from './core/visible.js';
 import { createLGV } from './models/lgv.js';
 import { createLoadedPallet } from './models/props.js';
 import { nextTask } from './core/yield.js';
@@ -20,10 +20,18 @@ const CRASH_MESSAGES = [
 const KEY_MAP = { arrowup: 'up', w: 'up', arrowdown: 'down', s: 'down', arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right' };
 
 export async function mountGame(container, runner) {
-    const stage = createStage(container, { profile: 'low', post: false, background: 0x0a0f1c });
+    // fov 45 as in the original simulator: the whole field and the side racks stay in view on phones
+    const stage = createStage(container, { profile: 'low', post: false, background: 0x0a0f1c, fov: 45 });
+    const still = prefersReducedMotion();
     const { scene, camera } = stage;
-    camera.position.set(0, 15, 15);
-    camera.lookAt(0, 0, 0);
+    // portrait containers: step the camera back so the side racks stay in frame
+    const placeCamera = () => {
+        const fit = Math.max(1, 1 / camera.aspect);
+        camera.position.set(0, 15 * fit, 15 * fit);
+        camera.lookAt(0, 0, 0);
+    };
+    placeCamera();
+    new ResizeObserver(() => { if (stage.isLost()) return; placeCamera(); stage.renderOnce(); }).observe(container);
     scene.add(new THREE.HemisphereLight(0xb9c8ff, 0x1a1e26, 1.0));
     const key = new THREE.DirectionalLight(0xfff1e0, 2.0);
     key.position.set(5, 20, 10);
@@ -68,7 +76,10 @@ export async function mountGame(container, runner) {
     let carrying = false;
     let angle = Math.PI;
     let crashTime = -10, time = 0;
-    const keys = { up: false, down: false, left: false, right: false };
+    const held = { up: false, down: false, left: false, right: false };
+    let onDrive = () => {};
+    // every control change goes through here (buttons, keys, blur): under reduced motion it starts/stops rendering
+    const keys = new Proxy(held, { set(t, k, v) { t[k] = v; onDrive(); return true; } });
     const status = document.getElementById('game-status');
     const setStatus = (msg, error = false) => { status.textContent = msg; status.classList.toggle('is-error', error); };
     const forkCentre = () => new THREE.Vector3(-Math.sin(angle) * FORK_CENTER, 0, -Math.cos(angle) * FORK_CENTER).add(lgv.group.position);
@@ -89,6 +100,7 @@ export async function mountGame(container, runner) {
         }
         lgv.state.loaded = carrying;
         lgv.state.lift = carrying ? 0.2 : 0.12;
+        if (still) { lgv.update(0); stage.renderOnce(); }
     }
 
     // on-screen buttons (mouse, touch, keyboard Enter/Space)
@@ -152,6 +164,13 @@ export async function mountGame(container, runner) {
     await stage.renderer.compileAsync(scene, camera);
     stage.renderOnce();
     runner.register('game', stage);
-    whenVisible(container, () => runner.request('game'), () => runner.release('game'));
-    return { dispose: () => stage.dispose() };
+    if (!still) whenVisible(container, () => runner.request('game'), () => runner.release('game'));
+    else {
+        // reduced motion: no autoplay, the simulator renders only while the visitor drives
+        onDrive = () => {
+            if (held.up || held.down || held.left || held.right) runner.request('game');
+            else runner.release('game');
+        };
+    }
+    return { stage, dispose: () => stage.dispose() };
 }

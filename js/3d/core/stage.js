@@ -28,7 +28,9 @@ export function createStage(container, { profile = 'auto', background = 0x0a0f18
     container.appendChild(canvas);
     let renderer;
     try {
-        renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+        // failIfMajorPerformanceCaveat: on software WebGL (no GPU, many VDI desktops) the full plant would load
+        // the CPU and stutter the page; callers show the static picture instead
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', failIfMajorPerformanceCaveat: true });
     } catch (err) {
         canvas.remove();
         throw err;

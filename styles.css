@@ -537,6 +537,14 @@ ul {
   padding: 6rem 2rem;
 }
 
+/* Text sections below the fold are laid out only when they come near the viewport: the first layout
+   of the page (cold text shaping) shrinks from ~180 ms to ~60 ms. The 3D sections are left out on
+   purpose (their canvases follow ResizeObserver/IntersectionObserver). `auto` remembers real sizes. */
+#about, #experience, #projects, #skills, #education, #contact {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
+
 /* Reveal animation only when JS is running (html.js), so content is never hidden without JS */
 .js .section {
   opacity: 0;

@@ -76,6 +76,8 @@ export async function mountTwin(root, runner) {
         resolve();
     }));
     const { camera, controls, canvas } = stage;
+    const still = prefersReducedMotion();     // no render loop: every control redraws the still frame at once
+    let mounted = false;
     controls.maxPolarAngle = Math.PI * 0.47;
     controls.minDistance = 3;
     controls.maxDistance = 48;
@@ -127,6 +129,15 @@ export async function mountTwin(root, runner) {
         for (const b of lgvButtons) b.setAttribute('aria-pressed', String(b.dataset.lgv === id));
         watch.update(fleet.snapshot().find((s) => s.id === id), true);
         if (mode === 'follow') setMode('follow');      // glide to the newly selected LGV
+        else refreshStill();
+    }
+
+    /** Reduced motion: no render loop, so controls update the still frame directly. */
+    function refreshStill() {
+        if (!still || !mounted || stage.isLost()) return;
+        frame(0);
+        controls.update();
+        stage.renderOnce();
     }
 
     const raycaster = new THREE.Raycaster();
@@ -159,6 +170,15 @@ export async function mountTwin(root, runner) {
             const s = plant.lgvs.get(selected).group.position;
             const target = new THREE.Vector3(s.x, 0.9, s.z);
             goal = { target, pos: target.clone().add(FOLLOW_OFFSET) };
+        }
+        if (still) {
+            // no camera flights without motion: jump to the pose
+            camera.position.copy(goal.pos);
+            controls.target.copy(goal.target);
+            tween = null;
+            followPrev.copy(plant.lgvs.get(selected).group.position);
+            refreshStill();
+            return;
         }
         tween = { p0: camera.position.clone(), t0: controls.target.clone(), p1: goal.pos, t1: goal.target, k: 0 };
     }
@@ -251,7 +271,9 @@ export async function mountTwin(root, runner) {
     // ---------- toolbar & keyboard ----------
     let paused = false;
     const pauseBtn = root.querySelector('[data-twin="pause"]');
+    if (still) pauseBtn.hidden = true;          // nothing runs, nothing to pause
     function togglePause() {
+        if (still) return;
         paused = !paused;
         pauseBtn.setAttribute('aria-pressed', String(paused));
         pauseBtn.textContent = paused ? 'Resume' : 'Pause';
@@ -389,13 +411,8 @@ export async function mountTwin(root, runner) {
         const chunk = () => {
             for (let i = 0; i < 200 && left > 0; i++, left--) frame(0.05);
             if (left > 0) { setTimeout(chunk, 0); return; }
-            tween = null;
-            const p = overviewPose();
-            camera.position.copy(p.pos);
-            controls.target.copy(p.target);
-            controls.update();
-            frame(0);
-            stage.renderOnce();
+            mounted = true;
+            setMode(mode);           // jumps to the current pose (overview, or follow if chosen meanwhile) and draws
         };
         setTimeout(chunk, 0);
     }

@@ -177,9 +177,11 @@ function run(section, canvas, gl, prog, runner) {
     if (!reduced && !mobile) addEventListener('pointermove', onMove, { passive: true });
 
     let raf = 0, running = false, lost = false;
-    const t0 = performance.now();
+    // animation time advances by clamped frame steps: no jump after the tab was hidden or the hero paused
+    let t = 0, lastNow = 0;
     function draw(now) {
-        const t = (now - t0) / 1000;
+        if (lastNow) t += Math.min(0.05, Math.max(0, (now - lastNow) / 1000));
+        lastNow = now;
         px += (mx - px) * 0.05;
         py += (my - py) * 0.05;
         const aspect = width / height;

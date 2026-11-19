@@ -65,6 +65,14 @@ export async function mountTwin(root, runner) {
         createCodePanel(root.querySelector('.twin-code')).setState('GoToPick');
         return { dispose() {} };
     }
+    // context loss can happen at any time, even during this async setup
+    let stopVisibility = () => {};
+    const lostSignal = new Promise((resolve) => stage.onLost(() => {
+        stopVisibility();
+        runner.release('twin');
+        showTwinFallback(root);
+        resolve();
+    }));
     const { camera, controls, canvas } = stage;
     controls.maxPolarAngle = Math.PI * 0.47;
     controls.minDistance = 3;
@@ -237,17 +245,16 @@ export async function mountTwin(root, runner) {
 
     if (new URLSearchParams(location.search).has('debug3d')) window.__twin = { stage, fleet, traffic, plant, select, setMode, frame };
 
-    stage.onLost(() => {
-        runner.release('twin');
-        showTwinFallback(root);
-    });
-
+    const result = { stage, fleet, plant, select, dispose: () => stage.dispose() };
     await nextTask();
     select(selected);
     frame(0);
     await nextTask();
-    await stage.renderer.compileAsync(stage.scene, camera);   // parallel shader compile: no long task
+    // parallel shader compile (no long task); on a lost context it would never resolve
+    await Promise.race([stage.renderer.compileAsync(stage.scene, camera), lostSignal]);
+    if (stage.isLost()) return result;
     await uploadTextures(stage);
+    if (stage.isLost()) return result;
     // first frame split in two tasks: plain render (scene + shadow programs), then post-processing
     stage.renderer.render(stage.scene, camera);
     await nextTask();
@@ -269,10 +276,10 @@ export async function mountTwin(root, runner) {
         };
         setTimeout(chunk, 0);
     }
-    if (!prefersReducedMotion()) {
+    if (!prefersReducedMotion() && !stage.isLost()) {
         runner.register('twin', stage);
-        whenVisible(view, () => runner.request('twin'), () => runner.release('twin'));
+        stopVisibility = whenVisible(view, () => runner.request('twin'), () => runner.release('twin'));
     }
 
-    return { stage, fleet, plant, select, dispose: () => stage.dispose() };
+    return result;
 }

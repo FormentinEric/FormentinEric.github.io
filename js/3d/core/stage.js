@@ -117,13 +117,16 @@ export function createStage(container, { profile = 'auto', background = 0x0a0f18
         draw();
     }
 
-    const ro = new ResizeObserver(() => { resize(); if (!running) draw(); });
+    let lost = false;
+    const ro = new ResizeObserver(() => { if (lost) return; resize(); if (!running) draw(); });
     ro.observe(container);
 
     canvas.addEventListener('webglcontextlost', (e) => {
         e.preventDefault();
+        lost = true;            // a lost stage never renders again (callers show a fallback)
         running = false;
         cancelAnimationFrame(raf);
+        ro.disconnect();
         for (const fn of lostFns) fn();
     });
 
@@ -135,8 +138,9 @@ export function createStage(container, { profile = 'auto', background = 0x0a0f18
         setProfile,
         onFrame: (fn) => frameFns.push(fn),
         onLost: (fn) => lostFns.push(fn),
+        isLost: () => lost,
         start() {
-            if (running) return;
+            if (running || lost) return;
             running = true;
             last = performance.now();
             raf = requestAnimationFrame(loop);

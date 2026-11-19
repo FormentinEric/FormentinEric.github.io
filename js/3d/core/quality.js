@@ -15,19 +15,25 @@ export function pickInitialProfile({ isMobile, gpu }) {
     return 'medium';
 }
 
-/** Downgrades to 'low' once, after `seconds` of continuous frames under `minFps`. */
+/**
+ * Downgrades to 'low' once, when the average frame rate over a window of `seconds` is under
+ * `minFps` (an average, so stutter with the odd fast frame still counts as slow).
+ */
 export function createGovernor({ minFps = 40, seconds = 3, initial = 'medium' } = {}) {
     let current = initial;
-    let slowTime = 0;
+    let time = 0, frames = 0;
     return {
         sample(dt) {
             if (current === 'low') return null;
-            slowTime = 1 / dt < minFps ? slowTime + dt : 0;
-            if (slowTime >= seconds) {
-                current = 'low';
-                return 'low';
-            }
-            return null;
+            time += dt;
+            frames++;
+            if (time < seconds) return null;
+            const slow = frames / time < minFps;
+            time = 0;
+            frames = 0;
+            if (!slow) return null;
+            current = 'low';
+            return 'low';
         },
         profile: () => current,
     };

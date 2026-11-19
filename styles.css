@@ -661,6 +661,14 @@ ul {
   pointer-events: none;
   -webkit-mask-image: radial-gradient(ellipse at center, #000 45%, transparent 78%);
   mask-image: radial-gradient(ellipse at center, #000 45%, transparent 78%);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.hero-canvas.is-on { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-canvas { transition: none; }
 }
 
 .profile-container {

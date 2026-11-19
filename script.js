@@ -128,10 +128,25 @@ document.addEventListener('DOMContentLoaded', () => {
     lazy3d(document.getElementById('game-canvas-container'), (runner) =>
         import('./js/3d/game.js').then((m) => m.mountGame(document.getElementById('game-canvas-container'), runner)));
 
-    // --- 5. Hero point cloud (WebGL2, no three.js): after the load event, so it never competes with the LCP ---
-    const mountHero = () => import('./js/hero.js')
-        .then((m) => m.mountHero(document.getElementById('hero')))
-        .catch((err) => console.warn('Hero background disabled:', err && err.message ? err.message : err));
-    if (document.readyState === 'complete') setTimeout(mountHero, 0);
-    else window.addEventListener('load', () => setTimeout(mountHero, 0), { once: true });
+    // --- 5. Hero point cloud (WebGL2, no three.js) ---
+    // The cloud starts as scattered points and assembles while the visitor scrolls, so it starts at the first
+    // interaction after the load event: creating a WebGL context costs the browser a noticeable moment
+    // (GPU start-up), and nobody should wait for it before the page is usable. The module is fetched at idle.
+    const heroModule = () => import('./js/hero.js');
+    const HERO_EVENTS = ['pointermove', 'pointerdown', 'wheel', 'touchstart', 'keydown', 'scroll'];
+    let heroStarted = false;
+    const startHero = () => {
+        if (heroStarted) return;
+        heroStarted = true;
+        for (const ev of HERO_EVENTS) window.removeEventListener(ev, startHero);
+        heroModule()
+            .then((m) => m.mountHero(document.getElementById('hero')))
+            .catch((err) => console.warn('Hero background disabled:', err && err.message ? err.message : err));
+    };
+    const armHero = () => {
+        for (const ev of HERO_EVENTS) window.addEventListener(ev, startHero, { passive: true });
+        (window.requestIdleCallback || setTimeout)(() => heroModule().catch(() => {}));
+    };
+    if (document.readyState === 'complete') armHero();
+    else window.addEventListener('load', armHero, { once: true });
 });

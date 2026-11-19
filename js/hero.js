@@ -39,12 +39,11 @@ void main() {
     outColor = vec4(uColor * a, a);      // premultiplied, blended additively
 }`;
 
-function compile(gl, type, src) {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
-    return s;
+function shader(gl, type, src) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);           // status is read only once the driver is done (no blocking query here)
+    return sh;
 }
 
 function perspective(fovY, aspect, near, far) {
@@ -93,28 +92,48 @@ function decode(step) {
 
 /**
  * @param {HTMLElement} section  #hero; must contain <canvas class="hero-canvas">
- * @returns {{dispose(): void}}
+ * @returns {{ready: Promise<boolean>, dispose(): void}}  ready: true once the cloud is drawing, false if it never will
  */
 export function mountHero(section) {
     const canvas = section && section.querySelector('.hero-canvas');
-    const gl = canvas && canvas.getContext('webgl2', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'low-power' });
-    if (!gl) { canvas?.remove(); return { dispose() {} }; }      // no WebGL2: CSS background only
+    // failIfMajorPerformanceCaveat: no hero on software rendering (no GPU) — a decorative animation is not
+    // worth a busy CPU there; the CSS background stays.
+    const gl = canvas && canvas.getContext('webgl2', {
+        antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'low-power', failIfMajorPerformanceCaveat: true,
+    });
+    if (!gl) { canvas?.remove(); return { ready: Promise.resolve(false), dispose() {} }; }   // CSS background only
 
+    // Shaders compile and link off the main thread (KHR_parallel_shader_compile, polled); without the
+    // extension the blocking link waits for an idle moment. Either way no long task right after load.
+    const prog = gl.createProgram();
+    gl.attachShader(prog, shader(gl, gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, shader(gl, gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    const parallel = gl.getExtension('KHR_parallel_shader_compile');
+    let disposed = false;
+    let teardown = () => canvas.remove();
+    const ready = new Promise((resolve) => {
+        const check = () => {
+            if (disposed) return resolve(false);
+            if (gl.isContextLost()) { canvas.remove(); return resolve(false); }
+            if (parallel && !gl.getProgramParameter(prog, parallel.COMPLETION_STATUS_KHR)) { setTimeout(check, 16); return; }
+            if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { canvas.remove(); return resolve(false); }
+            teardown = run(section, canvas, gl, prog);
+            resolve(true);
+        };
+        if (parallel) setTimeout(check, 16);
+        else if (window.requestIdleCallback) requestIdleCallback(check, { timeout: 2000 });
+        else setTimeout(check, 200);
+    });
+    return { ready, dispose() { disposed = true; teardown(); } };
+}
+
+/** Uploads the points and runs the render loop; returns its teardown. */
+function run(section, canvas, gl, prog) {
     const mobile = matchMedia('(pointer: coarse)').matches || innerWidth < 768;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const dprCap = mobile ? 1 : 2;
 
-    let prog;
-    try {
-        prog = gl.createProgram();
-        gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VS));
-        gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FS));
-        gl.linkProgram(prog);
-        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error('link');
-    } catch {
-        canvas.remove();
-        return { dispose() {} };
-    }
     const { n, target, scatter, order } = decode(mobile ? 2 : 1);
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
@@ -156,7 +175,8 @@ export function mountHero(section) {
     const onMove = (e) => { mx = (e.clientX / innerWidth) * 2 - 1; my = (e.clientY / innerHeight) * 2 - 1; };
     if (!reduced && !mobile) addEventListener('pointermove', onMove, { passive: true });
 
-    let raf = 0, running = false, lost = false, t0 = performance.now();
+    let raf = 0, running = false, lost = false;
+    const t0 = performance.now();
     function draw(now) {
         const t = (now - t0) / 1000;
         px += (mx - px) * 0.05;
@@ -173,9 +193,12 @@ export function mountHero(section) {
         gl.uniform1f(U.uSize, (mobile ? 2.6 : 3.1) * dpr);
         gl.drawArrays(gl.POINTS, 0, n);
     }
+    let lastDraw = 0;
     function loop(now) {
         if (!running) return;
         raf = requestAnimationFrame(loop);
+        if (mobile && now - lastDraw < 30) return;       // phones: ~30 fps is plenty for a slow background
+        lastDraw = now;
         draw(now);
     }
     const start = () => { if (running || lost || reduced) return; running = true; raf = requestAnimationFrame(loop); };
@@ -185,6 +208,7 @@ export function mountHero(section) {
     ro.observe(section);
     resize();
     draw(performance.now());           // reduced motion: this single assembled frame is all there is
+    canvas.classList.add('is-on');     // fades in (CSS)
 
     // draw only while the hero is on screen (never together with the 3D sections further down)
     const io = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) start(); else stop(); });
@@ -197,14 +221,12 @@ export function mountHero(section) {
         canvas.remove();               // back to the CSS background
     });
 
-    return {
-        dispose() {
-            stop();
-            io.disconnect();
-            ro.disconnect();
-            removeEventListener('pointermove', onMove);
-            gl.getExtension('WEBGL_lose_context')?.loseContext();
-            canvas.remove();
-        },
+    return () => {
+        stop();
+        io.disconnect();
+        ro.disconnect();
+        removeEventListener('pointermove', onMove);
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+        canvas.remove();
     };
 }

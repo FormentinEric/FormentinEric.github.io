@@ -10,6 +10,8 @@ import { mergeStatic } from '../core/merge.js';
 import { nextTask } from '../core/yield.js';
 import { createLGV } from '../models/lgv.js';
 import { createPalletizingCell } from '../models/cell.js';
+import { createWrapper } from '../models/wrapper.js';
+import { createCharger } from '../models/charger.js';
 import { createLoadedPallet, createPallet, PALLET_HEIGHT, CARTON } from '../models/props.js';
 import { createStackerCrane } from '../models/stackerCrane.js';
 import { NODES, EDGES, STATIONS, ZONES, palletSpot } from './layout.js';
@@ -30,6 +32,12 @@ const SLOT_Y0 = RACK.levels[0] + 0.06;     // pallet bottom on the first beam le
 const CRANE_HEIGHT = 7.64;                 // guide rollers straddle the top rail hung under the rack ties
 const TABLE_SPEED = 0.3;                   // m/s lift tables
 const PALLET_GAP = 1.35;                   // m between queued pallets on a conveyor
+const WRAP_SECONDS = 12;
+const NAV_Y = 2.68;                        // height of the LGV laser scanner = reflector height
+// building columns carrying cylindrical reflectors for the LGV laser navigation
+const COLUMNS = [[-13.2, -5.5], [-13.2, 5.5], [12.3, -5.5], [12.3, 5.2], [-1.6, 9.5], [11.2, 9.5]];
+// reflector strips on rack uprights facing the loop (x of the upright)
+const RACK_REFLECTORS = [-7.2, -1.2, 6.0];
 const slotKey = (s) => `${s.bay}/${s.level}/${s.side}`;
 const slotPos = (s) => ({ x: RACK.x0 + (s.bay + 0.5) * RACK.pitch, y: RACK.levels[s.level] + 0.06, z: SLOT_Z[s.side] });
 const slotName = (s) => `${s.side ? 'B' : 'A'}${String(s.bay + 1).padStart(2, '0')}-${s.level + 1}`;
@@ -82,6 +90,23 @@ function pitConveyor(M, x, z0, z1) {
     const rollerGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.0, 12).rotateZ(Math.PI / 2);
     for (let z = Math.min(z0, z1) + 0.1; z < Math.max(z0, z1); z += 0.16) g.add(mesh(rollerGeo, M.aluminium, x, 0.03, z, false));
     return g;
+}
+
+/**
+ * Tiny parts (bolts, LEDs, labels) and glowing parts do not cast shadows: invisible in the shadow map,
+ * but each one costs a draw call in the shadow pass.
+ */
+function trimShadowCasters(root, minRadius = 0.1) {
+    const s = new THREE.Vector3();
+    root.updateMatrixWorld(true);
+    root.traverse((o) => {
+        if (!o.isMesh || o.isInstancedMesh || !o.castShadow) return;
+        const m = o.material;
+        if (m.emissive && m.emissive.getHex() !== 0 && m.emissiveIntensity > 0) { o.castShadow = false; return; }
+        if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+        o.getWorldScale(s);
+        if (o.geometry.boundingSphere.radius * Math.max(s.x, s.y, s.z) < minRadius) o.castShadow = false;
+    });
 }
 
 /** One rack row (both frames of its depth). `skip`: 'bay/level' beam pairs left out (conveyor transfer positions). */
@@ -265,10 +290,16 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
     await nextTask();
     // ---------- line 2: wrapped pallets on a pit conveyor ----------
     const L2 = palletSpot(STATIONS.L2);
-    statics.add(pitConveyor(M, L2.x, L2.z - 0.6, L2.z + 3.6));
+    statics.add(pitConveyor(M, L2.x, L2.z - 0.6, L2.z + 5.0));
     const hatch = new THREE.MeshStandardMaterial({ map: hazardTexture(3, 1), roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -1 });
-    statics.add(strip(L2.x - 0.8, L2.z + 3.9, L2.x + 0.8, L2.z + 3.9, 0.5, hatch));
-    let l2Timer = 6, l2Moving = null, l2Hold = false;
+    statics.add(strip(L2.x - 0.8, L2.z + 1.1, L2.x + 0.8, L2.z + 1.1, 0.3, hatch));
+    // stretch wrapper over the conveyor: pallets arrive bare, leave wrapped
+    const WRAP_Z = L2.z + 2.7;
+    const wrapper = createWrapper();
+    wrapper.group.position.set(L2.x, 0, WRAP_Z);
+    wrapper.group.rotation.y = Math.PI;          // control panel on the outer side, away from the robot cell
+    scene.add(wrapper.group);
+    let l2Timer = 6, l2Moving = null, l2Phase = null, l2Hold = false;
 
     await nextTask();
     // ---------- AS/RS: rack rows, crane aisle, IN/OUT conveyors ending on lift tables ----------
@@ -352,9 +383,27 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
 
     // ---------- charger and parking ----------
     const c1 = STATIONS.C1;
-    statics.add(mesh(new RoundedBoxGeometry(0.5, 1.5, 0.35, 2, 0.04), M.cabinetGrey, c1.dock.x + 0.4, 0.75, c1.dock.z - 1.0));
-    statics.add(mesh(new THREE.BoxGeometry(0.34, 0.2, 0.01), M.ledGreen, c1.dock.x + 0.4, 1.15, c1.dock.z - 0.82, false));
-    statics.add(mesh(new THREE.BoxGeometry(0.9, 0.02, 0.5), M.aluminium, c1.dock.x, 0.01, c1.dock.z, false));
+    const charger = createCharger();
+    charger.group.position.set(c1.dock.x - 0.05, 0, c1.dock.z - 0.1);
+    scene.add(charger.group);
+
+    // ---------- building columns and laser reflectors ----------
+    const columnPaint = new THREE.MeshStandardMaterial({ color: 0x8a939e, roughness: 0.6, metalness: 0.35 });
+    const reflectorMat = new THREE.MeshStandardMaterial({ color: 0xf4f7fb, emissive: 0x9fb4c8, emissiveIntensity: 0.35, roughness: 0.15 });
+    const reflectors = [];          // { c: centre (world), r: radius of the reflecting surface }
+    for (const [x, z] of COLUMNS) {
+        const H = 9.5;
+        for (const dx of [-0.14, 0.14]) statics.add(mesh(new THREE.BoxGeometry(0.02, H, 0.3), columnPaint, x + dx, H / 2, z));   // flanges
+        statics.add(mesh(new THREE.BoxGeometry(0.26, H, 0.02), columnPaint, x, H / 2, z));                                     // web
+        statics.add(mesh(new THREE.BoxGeometry(0.5, 0.025, 0.5), M.steelDark, x, 0.012, z, false));
+        statics.add(mesh(new THREE.BoxGeometry(0.34, 1.2, 0.34), M.hazard, x, 0.6, z));                                          // impact guard
+        statics.add(mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.45, 24, 1, true), reflectorMat, x, NAV_Y, z, false));
+        reflectors.push({ c: new THREE.Vector3(x, NAV_Y, z), r: 0.24 });
+    }
+    for (const x of RACK_REFLECTORS) {
+        statics.add(mesh(new THREE.BoxGeometry(0.09, 0.45, 0.012), reflectorMat, x, NAV_Y, RACK.front + 0.045, false));
+        reflectors.push({ c: new THREE.Vector3(x, NAV_Y, RACK.front + 0.05), r: 0 });
+    }
 
     await nextTask();
     mergeStatic(statics);
@@ -404,6 +453,40 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
             if (e.station === 'ASRS_IN') { g.userData.id = `P${nextPalletId++}`; inbound.push(g); }
             else if (bays[e.station]) bays[e.station].push({ g, target: BAY_SLOTS[bays[e.station].length] ?? 5.0 });
         }
+    }
+
+    // ---------- laser reflectors in line of sight ----------
+    let rayLgv = null, rayTimer = 0;
+    const RACK_BOX = { x0: RACK.x0 - 0.05, x1: RACK_X1 + 0.05, z0: RACK.back - RACK.depth - 0.05, z1: RACK.front - 0.1 };
+    function blockedByRacks(ax, az, bx, bz) {
+        // segment vs the rack footprint (slab test in XZ; racks are taller than the scanner)
+        let t0 = 0, t1 = 1;
+        for (const [a, d, lo, hi] of [[ax, bx - ax, RACK_BOX.x0, RACK_BOX.x1], [az, bz - az, RACK_BOX.z0, RACK_BOX.z1]]) {
+            if (Math.abs(d) < 1e-9) { if (a < lo || a > hi) return false; continue; }
+            let u = (lo - a) / d, v = (hi - a) / d;
+            if (u > v) [u, v] = [v, u];
+            t0 = Math.max(t0, u); t1 = Math.min(t1, v);
+            if (t0 > t1) return false;
+        }
+        return true;
+    }
+    function visibleReflectors(p) {
+        const out = [];
+        for (const { c, r } of reflectors) {
+            const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz);
+            if (d > 24 || d < 0.5) continue;
+            const t = new THREE.Vector3(c.x + (dx / d) * r, NAV_Y, c.z + (dz / d) * r);   // facing point of the reflector
+            if (r === 0 && p.z < c.z) continue;                                            // rack strips face the loop only
+            if (blockedByRacks(p.x, p.z, t.x, t.z)) continue;
+            out.push({ t, d });
+        }
+        return out.sort((a, b) => a.d - b.d).slice(0, 3).map((o) => o.t);
+    }
+    /** Laser rays follow this LGV (null: none). */
+    function showRaysFor(id) {
+        for (const [k, m] of lgvs) if (k !== id) m.showLaserRays(null);
+        rayLgv = id;
+        rayTimer = 0;
     }
 
     // ---------- stacker crane jobs ----------
@@ -477,13 +560,38 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
         const fillNow = asrs.fill();
         if (!l2Hold && fillNow >= 0.9) { l2Hold = true; onLog({ type: 'mission', text: 'Line 2 on hold: AS/RS 90 % full' }); }
         else if (l2Hold && fillNow <= 0.8) { l2Hold = false; onLog({ type: 'mission', text: 'Line 2 resumed' }); }
-        if (!l2Hold && !stationPallets.L2 && !l2Moving && !docked.has('L2') && (l2Timer -= dt) <= 0) {
-            l2Moving = newLoad(true, L2.x, L2.z + 3.4, 0);
+        // a bare pallet rides into the wrapper, gets wrapped, then rides to the P/D (waiting while an LGV is docked)
+        if (!l2Hold && !stationPallets.L2 && !l2Moving && (l2Timer -= dt) <= 0) {
+            l2Moving = newLoad(false, L2.x, L2.z + 4.6, 0);
+            l2Phase = 'infeed';
             l2Timer = L2_PERIOD;
         }
-        if (l2Moving) {
-            l2Moving.position.z = Math.max(L2.z, l2Moving.position.z - PIT_SPEED * dt);
-            if (l2Moving.position.z <= L2.z) { stationPallets.L2 = l2Moving; l2Moving = null; onPalletReady('L2'); }
+        if (l2Moving && l2Phase === 'infeed') {
+            l2Moving.position.z = Math.max(WRAP_Z, l2Moving.position.z - PIT_SPEED * dt);
+            if (l2Moving.position.z <= WRAP_Z) {
+                l2Phase = 'wrap';
+                wrapper.wrap(WRAP_SECONDS, () => {
+                    const g = newLoad(true, L2.x, WRAP_Z, 0);
+                    scene.remove(l2Moving);
+                    l2Moving = g;
+                    l2Phase = 'outfeed';
+                });
+            }
+        } else if (l2Moving && l2Phase === 'outfeed') {
+            const stop = docked.has('L2') ? L2.z + PALLET_GAP : L2.z;
+            l2Moving.position.z = Math.max(stop, l2Moving.position.z - PIT_SPEED * dt);
+            if (l2Moving.position.z <= L2.z) { stationPallets.L2 = l2Moving; l2Moving = null; l2Phase = null; onPalletReady('L2'); }
+        }
+        wrapper.update(dt);
+        // charger glows while an LGV charges on it
+        const charging = snapshot.find((s) => s.station === 'C1' && s.state === 'Charging');
+        charger.setCharging(!!charging);
+        charger.update(dt, charging ? charging.battery : null);
+        // laser triangulation of the selected LGV: 3 nearest reflectors in line of sight
+        if (rayLgv && (rayTimer -= dt) <= 0) {
+            rayTimer = 0.25;
+            const m = lgvs.get(rayLgv);
+            if (m) m.showLaserRays(visibleReflectors(m.group.position));
         }
         // AS/RS IN: the conveyor feeds the lift table (pallets queue behind it), the table lifts to the crane
         inTable.update(dt);
@@ -541,5 +649,6 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
         }
     }
 
-    return { lgvs, handle, update, stored: stock, capacity: asrs.capacity, asrs, crane };
+    trimShadowCasters(scene);
+    return { lgvs, handle, update, showRaysFor, stored: stock, capacity: asrs.capacity, asrs, crane, wrapper, charger };
 }

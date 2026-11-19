@@ -123,6 +123,7 @@ export async function mountTwin(root, runner) {
         if (!LGV_IDS.includes(id)) return;
         selected = id;
         fleet.select(id);
+        plant.showRaysFor(id);
         for (const b of lgvButtons) b.setAttribute('aria-pressed', String(b.dataset.lgv === id));
         watch.update(fleet.snapshot().find((s) => s.id === id), true);
         if (mode === 'follow') setMode('follow');      // glide to the newly selected LGV

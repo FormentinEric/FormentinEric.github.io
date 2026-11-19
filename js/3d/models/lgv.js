@@ -403,6 +403,7 @@ export function createLGV({ id = '02', forksSide = 1 } = {}) {
 
         // nav scanner spins ~2 rev/s
         navHead.rotation.y += dt * Math.PI * 4;
+        updateRays();
 
         // beacon flashes while moving or handling a load
         const active = Math.abs(v) > 0.02 || state.mode !== 'AUTO';
@@ -433,15 +434,57 @@ export function createLGV({ id = '02', forksSide = 1 } = {}) {
     mergeStatic(inner, sheaves);
     for (const w of wheels) mergeStatic(w.obj);
 
+    // ---------- laser triangulation: rays from the nav head to the reflectors it is measuring ----------
+    const RAYS = 3;
+    const rayGeo = new THREE.BufferGeometry();
+    rayGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RAYS * 6), 3));
+    rayGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(RAYS * 6), 3));
+    const rays = new THREE.LineSegments(rayGeo, new THREE.LineBasicMaterial({
+        vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    rays.frustumCulled = false;
+    rays.visible = false;
+    let rayTargets = null;
+    const _head = new THREE.Vector3(), _beam = new THREE.Vector3(), _to = new THREE.Vector3();
+    function updateRays() {
+        if (!rayTargets) return;
+        outer.updateMatrixWorld(true);
+        navHead.getWorldPosition(_head);
+        _beam.set(0, 0, -1).applyQuaternion(navHead.getWorldQuaternion(new THREE.Quaternion()));   // beam sector direction
+        const pos = rayGeo.attributes.position, col = rayGeo.attributes.color;
+        const hl = outer.worldToLocal(_head.clone());
+        for (let i = 0; i < RAYS; i++) {
+            const t = rayTargets[i];
+            if (!t) { pos.setXYZ(2 * i, hl.x, hl.y, hl.z); pos.setXYZ(2 * i + 1, hl.x, hl.y, hl.z); continue; }
+            _to.subVectors(t, _head);
+            // the ray flashes when the spinning beam sweeps across its reflector
+            const c = (_to.x * _beam.x + _to.z * _beam.z) / (Math.hypot(_to.x, _to.z) * Math.hypot(_beam.x, _beam.z) || 1);
+            const k = 0.28 + 0.72 * Math.pow(Math.max(0, c), 24);
+            const tl = outer.worldToLocal(_to.copy(t));
+            pos.setXYZ(2 * i, hl.x, hl.y, hl.z);
+            pos.setXYZ(2 * i + 1, tl.x, tl.y, tl.z);
+            col.setXYZ(2 * i, k, 0.16 * k, 0.16 * k);
+            col.setXYZ(2 * i + 1, 0.5 * k, 0.08 * k, 0.08 * k);
+        }
+        pos.needsUpdate = true;
+        col.needsUpdate = true;
+    }
+
     update(0);
     const outer = new THREE.Group();
     outer.name = `LGV-${id}`;
     if (forksSide < 0) root.rotation.y = Math.PI;
-    outer.add(root);
+    outer.add(root, rays);
+    /** Draw up to 3 rays from the nav head to these world points (reflectors), or hide them with null. */
+    function showLaserRays(targets) {
+        rayTargets = targets && targets.length ? targets.slice(0, RAYS) : null;
+        rays.visible = !!rayTargets;
+        updateRays();
+    }
     /** Show or hide the stretch film of the carried load (L2 pallets are wrapped, L1 pallets are not). */
     const setFilm = (visible) => { const f = load.getObjectByName('film'); if (f) f.visible = visible; };
 
-    return { group: outer, body: root, state, update, carriage, MAX_LIFT, setFilm };
+    return { group: outer, body: root, state, update, carriage, MAX_LIFT, setFilm, showLaserRays };
 }
 
 function estop(M, x, y, z) {

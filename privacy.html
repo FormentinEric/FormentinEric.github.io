@@ -30,12 +30,12 @@
         <ul class="privacy-list">
             <li>No cookies of any kind are set by this site.</li>
             <li>No advertising, profiling or cross-site tracking.</li>
-            <li>Fonts, icons and scripts are hosted on this site itself: your browser does not contact Google Fonts or other content delivery networks.</li>
+            <li>Fonts, icons and libraries are hosted on this site itself: your browser does not contact Google Fonts or other content delivery networks. The only external script is the visit counter described in section 4.</li>
             <li>The only external service is a cookieless, EU-hosted visit counter (GoatCounter), which is not loaded at all if your browser sends a "Global Privacy Control" or "Do Not Track" signal.</li>
         </ul>
 
         <h2>3. Hosting and server logs</h2>
-        <p>The site is a static website hosted on GitHub Pages by GitHub, Inc. (USA). When you visit any GitHub Pages site, GitHub logs your IP address for security purposes. This processing is necessary to deliver the site and protect it from abuse (legal basis: legitimate interest, Art. 6(1)(f) GDPR). GitHub, Inc. is certified under the EU-U.S. Data Privacy Framework. More information: <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub General Privacy Statement</a>.</p>
+        <p>The site is a static website hosted on GitHub Pages by GitHub, Inc. (USA). When you visit any GitHub Pages site, GitHub logs your IP address for security purposes. This processing is necessary to deliver the site and protect it from abuse (legal basis: legitimate interest, Art. 6(1)(f) GDPR). GitHub, Inc. is certified under the EU-U.S. Data Privacy Framework. These logs are kept by GitHub for the period defined in its own privacy statement and are not accessible to me. More information: <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub General Privacy Statement</a>.</p>
 
         <h2>4. Visit statistics (GoatCounter)</h2>
         <p>To know how many people visit the site, I use <a href="https://www.goatcounter.com" target="_blank" rel="noopener noreferrer">GoatCounter</a>, a privacy-friendly counter that only produces aggregate statistics (pages viewed, referring site, browser, operating system, screen size, language, approximate country).</p>
@@ -43,10 +43,11 @@
             <li>It does not set cookies and does not store identifiers in your browser.</li>
             <li>Your IP address and full browser signature are not stored: they are used only in memory (for up to 8 hours) to avoid counting the same visit twice, and are replaced by a random string.</li>
             <li>Data are stored on servers of Hetzner Online GmbH in Finland and Germany (EU). They are not shared with third parties and are not combined with other data.</li>
-            <li>The counter script only reads an optional opt-out flag in your browser's local storage.</li>
+            <li>The counter script uses your browser's local storage only for an optional opt-out flag ("skipgc"): it is written only if you open the opt-out link below, and removed if you open it again.</li>
         </ul>
         <p>Legal basis: legitimate interest in knowing aggregate usage of the site (Art. 6(1)(f) GDPR). Because the tool only produces aggregate, non-identifying statistics for this single site, no consent banner is required under the Italian Data Protection Authority's guidelines on cookies and other tracking tools (10 June 2021).</p>
-        <p><strong>How to opt out:</strong> enable "Global Privacy Control" or "Do Not Track" in your browser, or open <a href="index.html#toggle-goatcounter">this link</a> once: the counter will stop counting your visits in this browser.</p>
+        <p><strong>How to opt out:</strong> enable "Global Privacy Control" or "Do Not Track" in your browser (the counter is then not loaded at all), or open <a href="index.html#toggle-goatcounter">this link</a>: your visits will no longer be counted in this browser. Opening the same link again re-enables counting.</p>
+        <p><strong>Retention:</strong> the temporary in-memory data used to recognise a repeat visit are discarded after at most 8 hours. The resulting aggregate statistics contain no personal data and are kept for as long as the site exists.</p>
 
         <h2>5. Emails you send me</h2>
         <p>If you contact me by email, I use your email address and the content of your message only to reply to you (legal basis: steps taken at your request and legitimate interest, Art. 6(1)(b) and (f) GDPR). These data are not shared with third parties and are kept only as long as needed for our correspondence.</p>

@@ -1,5 +1,4 @@
-// Enables the scroll-reveal styles only when JavaScript runs (content stays visible without JS).
-document.documentElement.classList.add('js');
+// Note: the `js` class on <html> (enables scroll-reveal styles) is set early by js-enabled.js in <head>.
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -9,9 +8,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Runs `start` when the element enters the viewport and `stop` when it leaves.
     function whenVisible(element, start, stop) {
         const io = new IntersectionObserver((entries) => {
-            entries[0].isIntersecting ? start() : stop();
+            // The last entry is the most recent state if several were batched.
+            entries[entries.length - 1].isIntersecting ? start() : stop();
         }, { rootMargin: '100px 0px' });
         io.observe(element);
+    }
+
+    // Each 3D block is independent: if WebGL is unavailable, the rest of the page keeps working.
+    function safeInit(name, init) {
+        try {
+            init();
+        } catch (err) {
+            console.warn(`${name} disabled:`, err && err.message ? err.message : err);
+        }
     }
 
     // --- 1. Navbar Scroll Effect & Mobile Menu ---
@@ -33,6 +42,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     mobileToggle.addEventListener('click', () => setMenu(!navLinks.classList.contains('active')));
     allNavLinks.forEach(link => link.addEventListener('click', () => setMenu(false)));
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && navLinks.classList.contains('active')) {
+            setMenu(false);
+            mobileToggle.focus();
+        }
+    });
 
     // --- 2. Scroll Animation (Intersection Observer) ---
     // threshold 0 so that very tall sections (e.g. Projects on phones) are always revealed.
@@ -197,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    init3DBackground();
+    safeInit('3D background', init3DBackground);
 
     // --- Shared Functions ---
     // forksSide: +1 = mast and forks on +Z (warehouse demo), -1 = on -Z (simulator).
@@ -376,10 +391,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Render only while the section is on screen (saves GPU and battery).
+        // Reduced motion: keep the static first frame, no autoplay.
         renderer.render(scene, camera);
-        whenVisible(container,
-            () => { if (!running) { running = true; clock.getDelta(); animate3D(); } },
-            () => { running = false; });
+        if (!prefersReducedMotion) {
+            whenVisible(container,
+                () => { if (!running) { running = true; clock.getDelta(); animate3D(); } },
+                () => { running = false; });
+        }
 
         window.addEventListener('resize', () => {
             if (container.clientWidth > 0) {
@@ -389,9 +407,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderer.render(scene, camera);
             }
         });
+    }
 
-        // Code Typing Logic
+    // --- 5b. Code typing next to the warehouse demo (independent from WebGL) ---
+    function initCodeTyping() {
         const codeElement = document.getElementById('code-typing-area');
+        const container = document.querySelector('.pc-mockup');
+        if (!codeElement || !container) return;
         const codeLines = [
             "<span class='keyword'>public class</span> <span class='type'>LgvController</span> {",
             "    <span class='keyword'>public void</span> <span class='method'>RouteLgv</span>(<span class='type'>Lgv</span> lgv, <span class='type'>Position</span> target) {",
@@ -414,18 +436,29 @@ document.addEventListener('DOMContentLoaded', () => {
             "}"
         ];
 
+        // Static, trusted markup only (no user input reaches innerHTML).
+        if (prefersReducedMotion) {
+            codeElement.innerHTML = codeLines.join('<br>');
+            return;
+        }
+
         let lineIndex = 0;
-        let isTyping = false;
-        const pcBody = document.querySelector('.pc-body');
+        let visible = false;
+        let timer = null;
+        const pcBody = container.querySelector('.pc-body');
+
+        function schedule(fn, ms) {
+            timer = setTimeout(() => { timer = null; if (visible) fn(); }, ms);
+        }
 
         function typeCode() {
             if (lineIndex < codeLines.length) {
                 codeElement.innerHTML += codeLines[lineIndex] + "<br>";
                 lineIndex++;
                 if (pcBody) pcBody.scrollTop = pcBody.scrollHeight;
-                setTimeout(typeCode, 300 + Math.random() * 500);
+                schedule(typeCode, 300 + Math.random() * 500);
             } else {
-                setTimeout(() => {
+                schedule(() => {
                     codeElement.innerHTML = "";
                     lineIndex = 0;
                     typeCode();
@@ -433,16 +466,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const obs = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !isTyping) {
-                isTyping = true;
-                setTimeout(typeCode, 500);
-            }
-        }, { threshold: 0.2 });
-        obs.observe(container);
+        // Types only while visible; pauses off-screen and resumes where it stopped.
+        whenVisible(container,
+            () => { visible = true; if (!timer) schedule(typeCode, 500); },
+            () => { visible = false; });
     }
 
-    initWarehouseDemo();
+    safeInit('Warehouse demo', initWarehouseDemo);
+    initCodeTyping();
 
     // --- 6. Interactive LGV Game ---
     function initInteractiveGame() {
@@ -558,6 +589,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('touchstart', press, { passive: false });
             btn.addEventListener('touchend', release, { passive: false });
             btn.addEventListener('touchcancel', release, { passive: false });
+            // Keyboard: hold Enter/Space on a focused arrow button to drive.
+            btn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); keys[key] = true; }
+            });
+            btn.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); keys[key] = false; }
+            });
+            btn.addEventListener('blur', () => { keys[key] = false; });
         }
         addBtnListeners(document.getElementById('btn-up'), 'up');
         addBtnListeners(document.getElementById('btn-down'), 'down');
@@ -674,5 +713,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    initInteractiveGame();
+    safeInit('LGV simulator', initInteractiveGame);
 });

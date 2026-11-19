@@ -330,6 +330,9 @@ ul {
   color: var(--text-main);
   font-size: 1.5rem;
   cursor: pointer;
+  min-width: 44px;  /* touch target */
+  min-height: 44px;
+  margin-right: -10px;
 }
 
 /* =========================================
@@ -785,8 +788,10 @@ ul {
   cursor: pointer;
 }
 
+/* Outline is painted above the canvas (an inset box-shadow would be hidden under it) */
 #game-canvas-container:focus {
-  box-shadow: inset 0 0 0 2px var(--accent-cyan);
+  outline: 3px solid var(--accent-cyan);
+  outline-offset: -3px;
   cursor: default;
 }
 
@@ -834,7 +839,7 @@ ul {
 ========================================= */
 .skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: 2rem;
 }
 
@@ -1029,6 +1034,11 @@ ul {
 .stat-label {
   color: var(--text-muted);
   font-size: 0.95rem;
+}
+
+/* Filters need JavaScript: hide them when it is off */
+html:not(.js) .project-filters {
+  display: none;
 }
 
 .project-filters {

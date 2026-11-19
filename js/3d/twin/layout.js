@@ -9,7 +9,7 @@
 //        z = +5   [L2 P/D] [L1 P/D in robot cell]  conveyor   [B1] [B2] [B3]
 
 export const PALLET_OFFSET = 1.55;   // LGV origin → load centre on the forks
-export const PLANT = { minX: -11.5, maxX: 12.5, minZ: -9.5, maxZ: 8.5 };
+export const PLANT = { minX: -13.5, maxX: 12.5, minZ: -9.5, maxZ: 8.5 };
 
 export const NODES = [
     { id: 'FL', x: -9.5, z: 2 }, { id: 'L2a', x: -8.5, z: 2 }, { id: 'L1a', x: -6, z: 2 },
@@ -18,6 +18,7 @@ export const NODES = [
     { id: 'C1a', x: 9.5, z: 0 }, { id: 'BR', x: 9.5, z: -2 },
     { id: 'OUTa', x: 3, z: -2 }, { id: 'Bk', x: 0, z: -2 }, { id: 'INa', x: -3, z: -2 },
     { id: 'Bw', x: -6, z: -2 }, { id: 'BL', x: -9.5, z: -2 },
+    { id: 'P1a', x: -9.5, z: -0.8 }, { id: 'P2a', x: -9.5, z: 0.8 },
 ];
 
 export const ZONES = ['F1', 'F2', 'F3', 'F4', 'R', 'K1', 'K2', 'K3', 'L'];
@@ -34,8 +35,8 @@ export const EDGES = [
     { from: 'BR', to: 'OUTa', zone: 'K1' }, { from: 'OUTa', to: 'Bk', zone: 'K1' },
     { from: 'Bk', to: 'INa', zone: 'K2' }, { from: 'INa', to: 'Bw', zone: 'K2' },
     { from: 'Bw', to: 'BL', zone: 'K3' },
-    // left edge (+Z)
-    { from: 'BL', to: 'FL', zone: 'L' },
+    // left edge (+Z), with the two parking spots
+    { from: 'BL', to: 'P1a', zone: 'L' }, { from: 'P1a', to: 'P2a', zone: 'L' }, { from: 'P2a', to: 'FL', zone: 'L' },
 ];
 
 // heading: rotation.y that makes the LGV's +Z (forks) point from the approach node to the dock
@@ -53,7 +54,11 @@ export const STATIONS = {
     ASRS_IN: station('INa', 0, -1.45),
     ASRS_OUT: station('OUTa', 0, -1.45),
     C1: station('C1a', 1.45, 0),
+    P1: station('P1a', -1.45, 0),
+    P2: station('P2a', -1.45, 0),
 };
+
+export const REST_STATIONS = ['P1', 'P2', 'C1'];
 
 /** Load centre for a station (where the pallet sits). */
 export function palletSpot(s) {

@@ -105,9 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
         io.observe(element);
     }
 
-    lazy3d(document.getElementById('warehouse-canvas-container'), (runner) =>
-        import('./js/3d/legacyDemo.js').then((m) => m.mountLegacyDemo(
-            document.getElementById('warehouse-canvas-container'), document.getElementById('code-typing-area'), runner)));
+    lazy3d(document.getElementById('twin'), (runner) =>
+        import('./js/3d/twin/twin.js').then((m) => m.mountTwin(document.getElementById('twin'), runner)));
 
     lazy3d(document.getElementById('game-canvas-container'), (runner) =>
         import('./js/3d/game.js').then((m) => m.mountGame(document.getElementById('game-canvas-container'), runner)));

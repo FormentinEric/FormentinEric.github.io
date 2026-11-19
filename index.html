@@ -112,27 +112,19 @@
             </div>
         </section>
 
-        <!-- Warehouse Demo Section -->
+        <!-- Digital Twin Section (js/3d/twin) -->
         <section id="warehouse" class="section">
             <div class="section-header">
                 <h2><span class="highlight">01.</span> Industrial Logic in Action</h2>
                 <div class="header-line"></div>
             </div>
 
-            <div class="warehouse-container">
-                <div id="warehouse-canvas-container" class="glass-panel"></div>
-                <div class="pc-mockup glass-panel">
-                    <div class="pc-header">
-                        <span class="dot red"></span>
-                        <span class="dot yellow"></span>
-                        <span class="dot green"></span>
-                        <span class="pc-title">LgvController.cs - Visual Studio</span>
-                    </div>
-                    <div class="pc-body">
-                        <pre><code id="code-typing-area"></code></pre>
-                    </div>
-                </div>
+            <p class="twin-intro">A live digital twin of an intralogistics plant: a robot palletizes, a wrapping line feeds wrapped pallets, and three LGVs carry them to an automated warehouse and to shipping, sharing the aisles through zone-based traffic control.</p>
+
+            <div class="twin glass-panel" id="twin" tabindex="0" role="application" aria-label="Digital twin of an intralogistics plant" aria-describedby="twin-desc">
+                <div class="twin-view"></div>
             </div>
+            <p id="twin-desc" class="visually-hidden">Animated 3D model of a plant with a palletizing robot cell, a pallet wrapping line, three laser guided vehicles, an automated pallet warehouse and three shipping bays. The vehicles pick pallets, wait for free traffic zones, drop pallets and go charging when their battery is low.</p>
         </section>
 
         <!-- About Section -->

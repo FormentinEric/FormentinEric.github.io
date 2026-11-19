@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { materials } from '../core/materials.js';
+import { mergeStatic } from '../core/merge.js';
 
 let palletGeometry = null;
 
@@ -82,7 +83,10 @@ export function createLoadedPallet({ cols = 2, rows = 3, layers = 3, wrap = true
         );
         film.position.y = PALLET_HEIGHT + h / 2 - 0.01;
         film.renderOrder = 2;
+        film.name = 'film';
         group.add(film);
     }
+    // pallet + cartons → one mesh per material (the film stays separate so it can be toggled)
+    mergeStatic(group, [group.getObjectByName('film')].filter(Boolean));
     return group;
 }

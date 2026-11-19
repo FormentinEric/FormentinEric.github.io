@@ -236,8 +236,8 @@ export function createLGV({ id = '02', forksSide = 1 } = {}) {
     navHead.position.y = 0.08;
     navHead.add(mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.075, 32), M.glassDark));
     navHead.add(mesh(new THREE.BoxGeometry(0.018, 0.018, 0.006), M.ledRed, 0, 0, 0.081));
-    const beam = new THREE.Mesh(new THREE.CircleGeometry(9, 12, Math.PI / 2 - 0.05, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    const beam = new THREE.Mesh(new THREE.CircleGeometry(3.5, 12, Math.PI / 2 - 0.05, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
     beam.rotation.x = -Math.PI / 2;
     navHead.add(beam);
     navBase.add(navHead);
@@ -438,7 +438,10 @@ export function createLGV({ id = '02', forksSide = 1 } = {}) {
     outer.name = `LGV-${id}`;
     if (forksSide < 0) root.rotation.y = Math.PI;
     outer.add(root);
-    return { group: outer, body: root, state, update, carriage, MAX_LIFT };
+    /** Show or hide the stretch film of the carried load (L2 pallets are wrapped, L1 pallets are not). */
+    const setFilm = (visible) => { const f = load.getObjectByName('film'); if (f) f.visible = visible; };
+
+    return { group: outer, body: root, state, update, carriage, MAX_LIFT, setFilm };
 }
 
 function estop(M, x, y, z) {

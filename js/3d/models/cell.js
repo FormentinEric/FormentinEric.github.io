@@ -181,7 +181,11 @@ function cabinet(M) {
     return { group: g, stack: sl };
 }
 
-export function createPalletizingCell() {
+/**
+ * @param {{onPalletReady?: () => void, initialCount?: number}} opts  onPalletReady: called once when a pallet is full;
+ *        initialCount: cartons already on the pallet at start (0–17)
+ */
+export function createPalletizingCell({ onPalletReady = () => {}, initialCount = 0 } = {}) {
     const M = materials();
     const cell = new THREE.Group();
     cell.name = 'PalletizingCell';
@@ -193,8 +197,7 @@ export function createPalletizingCell() {
     cell.add(conv.group);
 
     const pallet = createPallet();
-    pallet.position.copy(PALLET_POS);
-    pallet.rotation.y = Math.PI / 2;
+    pallet.position.copy(PALLET_POS);   // long side along Z: the LGV forks enter through the light curtain
     cell.add(pallet);
 
     // fence: back, sides, front with LGV exit opening + light curtain
@@ -222,11 +225,11 @@ export function createPalletizingCell() {
 
     function slot(i) {
         const layer = Math.floor(i / 6), k = i % 6;
-        const col = k % 3, row = Math.floor(k / 3);
+        const col = k % 2, row = Math.floor(k / 2);   // 2 across × 3 along the forks, like the LGV load
         return new THREE.Vector3(
-            PALLET_POS.x + (col - 1) * CARTON.w,
+            PALLET_POS.x + (col - 0.5) * CARTON.w,
             PALLET_POS.y + PALLET_HEIGHT + (layer + 1) * CARTON.h,
-            PALLET_POS.z + (row - 0.5) * CARTON.d,
+            PALLET_POS.z + (row - 1) * CARTON.d,
         );
     }
     const pickTop = new THREE.Vector3(PICK_X, CONV_TOP + CARTON.h, CONV_Z);
@@ -249,8 +252,18 @@ export function createPalletizingCell() {
     let stepT = 0;
     let index = 0;
     let carried = null;
-    let fullTimer = 0;
+    let waitingPickup = false;
+    let restock = 0;
     const queue = [];
+
+    // optional head start: cartons already palletized
+    for (; index < Math.min(17, initialCount); index++) {
+        const c = createCarton(index);
+        const p = slot(index);
+        c.position.set(p.x, p.y - CARTON.h / 2, p.z);
+        cell.add(c);
+        placed.push(c);
+    }
 
     function plan() {
         const s = slot(index);
@@ -296,12 +309,10 @@ export function createPalletizingCell() {
         conv.spin(dt, moving ? SPEED : 0);
         conv.eye.material = boxAtPick() ? M.ledGreen : M.ledRed;
 
-        // pallet full: wait, then clear and restart (the LGV will take it away in the full scene)
-        if (fullTimer > 0) {
-            fullTimer -= dt;
-            if (fullTimer <= 0) {
-                for (const p of placed) cell.remove(p);
-                placed.length = 0;
+        // pallet full: wait for the LGV, then a new empty pallet arrives after `restock` seconds
+        if (waitingPickup || restock > 0) {
+            if (restock > 0 && (restock -= dt) <= 0) {
+                pallet.visible = true;
                 index = 0;
             }
             robot.setJoints(robot.solveIK(tcp));
@@ -342,11 +353,23 @@ export function createPalletizingCell() {
             tcp = interp(step.from, step.to, ease(s), step.lift || 0);
             if (s >= 1) {
                 step = null;
-                if (index >= 18 && queue.length === 0) fullTimer = 2.5;
+                if (index >= 18 && queue.length === 0) {
+                    waitingPickup = true;
+                    onPalletReady();
+                }
             }
         }
         robot.setJoints(robot.solveIK(tcp));
     }
 
-    return { group: cell, update, robot, stack: cab.stack, palletPosition: PALLET_POS.clone() };
+    /** The LGV took the full pallet: clear it and bring a new empty one. */
+    function takePallet() {
+        for (const p of placed) cell.remove(p);
+        placed.length = 0;
+        pallet.visible = false;
+        waitingPickup = false;
+        restock = 3;
+    }
+
+    return { group: cell, update, robot, stack: cab.stack, palletPosition: PALLET_POS.clone(), takePallet };
 }

@@ -290,6 +290,9 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
     }
 
     function update(dt, snapshot, zones) {
+        // a P/D is refilled only once the LGV that served it has left (no pallet sliding into its forks)
+        const docked = new Set();
+        for (const s of snapshot) if (s.station) docked.add(s.station);
         // LGVs
         for (const s of snapshot) {
             const m = lgvs.get(s.id);
@@ -307,7 +310,7 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
         // robot cell
         cell.update(dt);
         // line 2
-        if (!stationPallets.L2 && !l2Moving && (l2Timer -= dt) <= 0) {
+        if (!stationPallets.L2 && !l2Moving && !docked.has('L2') && (l2Timer -= dt) <= 0) {
             l2Moving = newLoad(true, L2.x, L2.z + 3.4, 0);
             l2Timer = L2_PERIOD;
         }
@@ -322,7 +325,7 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
             if (g.position.z < -6.6) { scene.remove(g); inbound.splice(i, 1); stored++; showStored(); onLog({ type: 'drop', text: `AS/RS stored pallet (${stored} in stock)` }); }
         }
         // AS/RS out: retrieve to the OUT P/D
-        if (!stationPallets.ASRS_OUT && !outMoving && stored > 0 && (outTimer -= dt) <= 0) {
+        if (!stationPallets.ASRS_OUT && !outMoving && !docked.has('ASRS_OUT') && stored > 0 && (outTimer -= dt) <= 0) {
             stored--; showStored();
             outMoving = newLoad(Math.random() > 0.4, OUT.x, -6.6, Math.PI);
             outTimer = OUT_PERIOD;

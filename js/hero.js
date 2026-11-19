@@ -92,9 +92,10 @@ function decode(step) {
 
 /**
  * @param {HTMLElement} section  #hero; must contain <canvas class="hero-canvas">
+ * @param {{register, request, release}} [runner]  exclusive WebGL runner shared with the 3D sections
  * @returns {{ready: Promise<boolean>, dispose(): void}}  ready: true once the cloud is drawing, false if it never will
  */
-export function mountHero(section) {
+export function mountHero(section, runner = null) {
     const canvas = section && section.querySelector('.hero-canvas');
     // failIfMajorPerformanceCaveat: no hero on software rendering (no GPU) — a decorative animation is not
     // worth a busy CPU there; the CSS background stays.
@@ -118,7 +119,7 @@ export function mountHero(section) {
             if (gl.isContextLost()) { canvas.remove(); return resolve(false); }
             if (parallel && !gl.getProgramParameter(prog, parallel.COMPLETION_STATUS_KHR)) { setTimeout(check, 16); return; }
             if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { canvas.remove(); return resolve(false); }
-            teardown = run(section, canvas, gl, prog);
+            teardown = run(section, canvas, gl, prog, runner);
             resolve(true);
         };
         if (parallel) setTimeout(check, 16);
@@ -129,7 +130,7 @@ export function mountHero(section) {
 }
 
 /** Uploads the points and runs the render loop; returns its teardown. */
-function run(section, canvas, gl, prog) {
+function run(section, canvas, gl, prog, runner) {
     const mobile = matchMedia('(pointer: coarse)').matches || innerWidth < 768;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const dprCap = mobile ? 1 : 2;
@@ -210,18 +211,24 @@ function run(section, canvas, gl, prog) {
     draw(performance.now());           // reduced motion: this single assembled frame is all there is
     canvas.classList.add('is-on');     // fades in (CSS)
 
-    // draw only while the hero is on screen (never together with the 3D sections further down)
-    const io = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) start(); else stop(); });
+    // draw only while the hero is on screen, and never together with a 3D section: through the shared
+    // runner the twin stops the hero while it runs and hands back when it leaves
+    if (runner && !reduced) runner.register('hero', { start, stop });
+    const onScreen = () => (runner && !reduced ? runner.request('hero') : start());
+    const offScreen = () => (runner && !reduced ? runner.release('hero') : stop());
+    const io = new IntersectionObserver((entries) => { if (entries[entries.length - 1].isIntersecting) onScreen(); else offScreen(); });
     io.observe(section);
 
     canvas.addEventListener('webglcontextlost', (e) => {
         e.preventDefault();
         lost = true;
+        offScreen();
         stop();
         canvas.remove();               // back to the CSS background
     });
 
     return () => {
+        offScreen();
         stop();
         io.disconnect();
         ro.disconnect();

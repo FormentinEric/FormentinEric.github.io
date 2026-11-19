@@ -139,8 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (heroStarted) return;
         heroStarted = true;
         for (const ev of HERO_EVENTS) window.removeEventListener(ev, startHero);
-        heroModule()
-            .then((m) => m.mountHero(document.getElementById('hero')))
+        Promise.all([heroModule(), runnerReady])
+            .then(([m, runner]) => m.mountHero(document.getElementById('hero'), runner))
             .catch((err) => console.warn('Hero background disabled:', err && err.message ? err.message : err));
     };
     const armHero = () => {

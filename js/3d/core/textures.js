@@ -44,15 +44,15 @@ function stains(g, w, h, r, count, dark, light) {
 
 /** Sealed industrial concrete floor: colour + roughness maps (tileable 4 m panels). */
 export function concreteMaps(repeat = 10) {
-    const map = canvasTexture(1024, 1024, (g, w, h) => {
+    const map = canvasTexture(512, 512, (g, w, h) => {
         const r = rng(11);
         g.fillStyle = '#4a4f57';
         g.fillRect(0, 0, w, h);
-        stains(g, w, h, r, 70, 0.10, 0.05);
+        stains(g, w, h, r, 40, 0.10, 0.05);
         // tyre marks
         g.strokeStyle = 'rgba(0,0,0,0.06)';
         for (let i = 0; i < 14; i++) {
-            g.lineWidth = 6 + r() * 10;
+            g.lineWidth = 3 + r() * 5;
             g.beginPath();
             const y = r() * h;
             g.moveTo(0, y);
@@ -66,7 +66,7 @@ export function concreteMaps(repeat = 10) {
         g.fillRect(0, 0, 3, h);
     }, { repeat: [repeat, repeat] });
 
-    const roughnessMap = canvasTexture(512, 512, (g, w, h) => {
+    const roughnessMap = canvasTexture(256, 256, (g, w, h) => {
         const r = rng(23);
         g.fillStyle = '#b8b8b8';
         g.fillRect(0, 0, w, h);
@@ -143,18 +143,18 @@ export function screenTexture(w = 512, h = 256) {
 
 /** Corrugated cardboard with tape and shipping label. */
 export function cartonTexture(seed = 3, tint = '#b9895a') {
-    return canvasTexture(512, 512, (g, w, h) => {
+    return canvasTexture(256, 256, (g, w, h) => {
         const r = rng(seed);
         g.fillStyle = tint;
         g.fillRect(0, 0, w, h);
         // fibres
         g.strokeStyle = 'rgba(90,55,25,0.10)';
-        for (let i = 0; i < 400; i++) {
+        for (let i = 0; i < 150; i++) {
             g.lineWidth = 1;
             g.beginPath();
             const x = r() * w, y = r() * h;
             g.moveTo(x, y);
-            g.lineTo(x + (r() - 0.5) * 40, y + (r() - 0.5) * 6);
+            g.lineTo(x + (r() - 0.5) * 20, y + (r() - 0.5) * 3);
             g.stroke();
         }
         addNoise(g, w, h, 16, r);
@@ -174,16 +174,16 @@ export function cartonTexture(seed = 3, tint = '#b9895a') {
         g.fillRect(w * 0.08, h * 0.62, w * 0.3, h * 0.22);
         g.fillStyle = '#1a1a1a';
         for (let x = 0; x < 34; x++) {
-            if (r() > 0.4) g.fillRect(w * 0.1 + x * 4, h * 0.67, r() > 0.5 ? 2 : 3, h * 0.1);
+            if (r() > 0.4) g.fillRect(w * 0.1 + x * 2, h * 0.67, r() > 0.5 ? 1 : 2, h * 0.1);
         }
-        g.font = '700 18px Arial';
+        g.font = '700 10px Arial';
         g.fillText('EF-' + Math.floor(1000 + r() * 8999), w * 0.1, h * 0.82);
         // "this way up" arrows
-        g.strokeStyle = '#2a1a0e'; g.lineWidth = 6;
-        for (const dx of [0, 34]) {
+        g.strokeStyle = '#2a1a0e'; g.lineWidth = 3;
+        for (const dx of [0, 17]) {
             g.beginPath();
             g.moveTo(w * 0.7 + dx, h * 0.84); g.lineTo(w * 0.7 + dx, h * 0.66);
-            g.moveTo(w * 0.7 + dx - 12, h * 0.71); g.lineTo(w * 0.7 + dx, h * 0.66); g.lineTo(w * 0.7 + dx + 12, h * 0.71);
+            g.moveTo(w * 0.7 + dx - 6, h * 0.71); g.lineTo(w * 0.7 + dx, h * 0.66); g.lineTo(w * 0.7 + dx + 6, h * 0.71);
             g.stroke();
         }
     });
@@ -239,19 +239,19 @@ export function corrugationTexture(repeat = 60) {
 
 /** Painted floor text, e.g. "LGV ONLY". */
 export function floorTextTexture(text) {
-    return canvasTexture(1024, 256, (g, w, h) => {
+    return canvasTexture(512, 128, (g, w, h) => {
         g.clearRect(0, 0, w, h);
-        g.font = '900 170px Outfit, Arial, sans-serif';
+        g.font = '900 85px Outfit, Arial, sans-serif';
         g.textAlign = 'center';
         g.textBaseline = 'middle';
         g.fillStyle = 'rgba(242,178,15,0.92)';
-        g.fillText(text, w / 2, h / 2 + 10);
+        g.fillText(text, w / 2, h / 2 + 5);
         // worn paint
         g.globalCompositeOperation = 'destination-out';
         const r = rng(4);
-        for (let i = 0; i < 900; i++) {
+        for (let i = 0; i < 260; i++) {
             g.fillStyle = `rgba(0,0,0,${r() * 0.6})`;
-            g.fillRect(r() * w, r() * h, 2 + r() * 6, 2 + r() * 4);
+            g.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 2);
         }
         g.globalCompositeOperation = 'source-over';
     });

@@ -7,6 +7,7 @@ import { createRobot } from './robot.js';
 import { createPallet, createCarton, CARTON, PALLET_HEIGHT } from './props.js';
 import { screenTexture } from '../core/textures.js';
 import { mergeStatic } from '../core/merge.js';
+import { nextTask } from '../core/yield.js';
 
 const CONV_TOP = 0.8;
 const CONV_Z = 1.05;
@@ -87,12 +88,11 @@ function conveyor(M) {
 
 function fencePanel(M, width, height = 2.0) {
     const g = new THREE.Group();
-    const meshTex = M.fenceMesh.map.clone();
-    meshTex.needsUpdate = true;
-    meshTex.repeat.set(width / 0.5, height / 0.5);
-    const mat = M.fenceMesh.clone();
-    mat.map = meshTex;
-    const panel = mesh(new THREE.PlaneGeometry(width - 0.06, height - 0.12), mat, 0, 0.12 + (height - 0.12) / 2, 0);
+    // one shared material/texture for every panel: the wire pitch comes from scaled UVs (0.5 m per tile)
+    const geo = new THREE.PlaneGeometry(width - 0.06, height - 0.12);
+    const uv = geo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (width / 0.5), uv.getY(i) * (height / 0.5));
+    const panel = mesh(geo, M.fenceMesh, 0, 0.12 + (height - 0.12) / 2, 0);
     g.add(panel);
     for (const y of [0.12, height]) g.add(mesh(new THREE.BoxGeometry(width - 0.05, 0.025, 0.025), M.plasticBlack, 0, y, 0));
     g.add(mesh(new THREE.BoxGeometry(0.055, height + 0.05, 0.055), M.fenceYellow, -width / 2, (height + 0.05) / 2, 0));
@@ -185,12 +185,13 @@ function cabinet(M) {
  * @param {{onPalletReady?: () => void, initialCount?: number}} opts  onPalletReady: called once when a pallet is full;
  *        initialCount: cartons already on the pallet at start (0–17)
  */
-export function createPalletizingCell({ onPalletReady = () => {}, initialCount = 0 } = {}) {
+export async function createPalletizingCell({ onPalletReady = () => {}, initialCount = 0 } = {}) {
     const M = materials();
     const cell = new THREE.Group();
     cell.name = 'PalletizingCell';
 
     const robot = createRobot();
+    await nextTask();
     cell.add(robot.group);
 
     const conv = conveyor(M);
@@ -200,6 +201,7 @@ export function createPalletizingCell({ onPalletReady = () => {}, initialCount =
     pallet.position.copy(PALLET_POS);   // long side along Z: the LGV forks enter through the light curtain
     cell.add(pallet);
 
+    await nextTask();
     // fence: back, sides, front with LGV exit opening + light curtain
     const Z0 = -1.6, Z1 = 2.45, X0 = -2.45, X1 = 2.85;
     cell.add(fenceRun(M, new THREE.Vector2(X0, Z0), new THREE.Vector2(X1, Z0)));
@@ -209,12 +211,14 @@ export function createPalletizingCell({ onPalletReady = () => {}, initialCount =
     cell.add(lightCurtain(M, 0.8, 2.35, Z1));
     cell.add(fenceRun(M, new THREE.Vector2(2.4, Z1), new THREE.Vector2(X1, Z1)));
 
+    await nextTask();
     const cab = cabinet(M);
     cab.group.position.set(-3.3, 0, -0.6);
     cab.group.rotation.y = Math.PI / 2;
     cell.add(cab.group);
 
     // static geometry → one mesh per material
+    await nextTask();
     mergeStatic(cell, [robot.group, conv.rollers, conv.eye, pallet, ...cab.stack.segs]);
 
     // ---------- cycle ----------

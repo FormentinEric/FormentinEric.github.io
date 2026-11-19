@@ -7,6 +7,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { materials } from '../core/materials.js';
 import { concreteMaps, floorTextTexture, hazardTexture, cartonTexture } from '../core/textures.js';
 import { mergeStatic } from '../core/merge.js';
+import { nextTask } from '../core/yield.js';
 import { createLGV } from '../models/lgv.js';
 import { createPalletizingCell } from '../models/cell.js';
 import { createLoadedPallet, createPallet, PALLET_HEIGHT } from '../models/props.js';
@@ -93,13 +94,15 @@ function rackBlock(M, { x0, x1, zFront, depth, levels, height }) {
     return { group: g, slots };
 }
 
-export function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog }) {
+export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog }) {
     const { scene, renderer } = stage;
     const M = materials();
+    await nextTask();
 
     // ---------- environment & lights ----------
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    await nextTask();
     scene.environmentIntensity = 0.42;
     scene.background = new THREE.Color(0x0a0f18);
     scene.fog = new THREE.Fog(0x0a0f18, 30, 75);
@@ -125,6 +128,7 @@ export function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog 
 
     const statics = new THREE.Group();
     scene.add(statics);
+    await nextTask();
 
     // ---------- markings from the graph ----------
     const yellow = new THREE.MeshStandardMaterial({ color: 0xf2b20f, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -1 });
@@ -149,6 +153,7 @@ export function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog 
         statics.add(label(name.replace('ASRS_', ''), lx + Math.cos(st.heading) * 1.0, lz - Math.sin(st.heading) * 1.0, st.heading + Math.PI, M, 0.5));
     }
 
+    await nextTask();
     // ---------- zone tiles (coloured by the traffic manager) ----------
     const zoneTiles = new Map();
     for (const z of ZONES) {
@@ -163,9 +168,10 @@ export function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog 
         zoneTiles.set(z, { group: g, mat });
     }
 
+    await nextTask();
     // ---------- line 1: robot palletizing cell (rotated so its light curtain faces the loop) ----------
     const stationPallets = { L1: null, L2: null, ASRS_OUT: null };
-    const cell = createPalletizingCell({
+    const cell = await createPalletizingCell({
         initialCount: 14,
         onPalletReady: () => { stationPallets.L1 = 'cell'; onPalletReady('L1'); },
     });
@@ -173,6 +179,7 @@ export function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog 
     cell.group.rotation.y = Math.PI;
     scene.add(cell.group);
 
+    await nextTask();
     // ---------- line 2: wrapped pallets on a pit conveyor ----------
     const L2 = palletSpot(STATIONS.L2);
     statics.add(pitConveyor(M, L2.x, L2.z - 0.6, L2.z + 3.6));
@@ -180,6 +187,7 @@ export function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog 
     statics.add(strip(L2.x - 0.8, L2.z + 3.9, L2.x + 0.8, L2.z + 3.9, 0.5, hatch));
     let l2Timer = 6, l2Moving = null;
 
+    await nextTask();
     // ---------- AS/RS: racks + IN/OUT pit conveyors ----------
     const IN = palletSpot(STATIONS.ASRS_IN), OUT = palletSpot(STATIONS.ASRS_OUT);
     const levels = [1.6, 3.2, 4.8, 6.4];
@@ -203,6 +211,7 @@ export function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog 
     const inbound = [];        // pallets riding into the racks
     let outTimer = 8, outMoving = null;
 
+    await nextTask();
     // ---------- shipping bays + dock wall with trailer ----------
     const bayNames = ['B1', 'B2', 'B3'];
     const bays = Object.fromEntries(bayNames.map((b) => [b, []]));
@@ -230,11 +239,13 @@ export function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, onLog 
     statics.add(mesh(new THREE.BoxGeometry(0.34, 0.2, 0.01), M.ledGreen, c1.dock.x + 0.4, 1.15, c1.dock.z - 0.82, false));
     statics.add(mesh(new THREE.BoxGeometry(0.9, 0.02, 0.5), M.aluminium, c1.dock.x, 0.01, c1.dock.z, false));
 
+    await nextTask();
     mergeStatic(statics);
 
     // ---------- LGVs ----------
     const lgvs = new Map();
     for (const id of lgvIds) {
+        await nextTask();
         const m = createLGV({ id });
         m.state.loaded = false;
         scene.add(m.group);

@@ -51,7 +51,7 @@ export function materials() {
             clearcoat: 1, clearcoatRoughness: 0.1, depthWrite: false, side: THREE.DoubleSide,
         }),
         fenceMesh: new THREE.MeshStandardMaterial({
-            map: wireMeshTexture(1, 2), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.6,
+            map: wireMeshTexture(1, 1), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.6,
         }),
         hose: new THREE.MeshStandardMaterial({
             color: 0x14161a, roughness: 0.55, bumpMap: corrugationTexture(70), bumpScale: 2.5,

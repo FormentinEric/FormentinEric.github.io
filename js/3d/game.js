@@ -4,6 +4,7 @@ import { createStage } from './core/stage.js';
 import { whenVisible } from './core/visible.js';
 import { createLGV } from './models/lgv.js';
 import { createLoadedPallet } from './models/props.js';
+import { nextTask } from './core/yield.js';
 
 const BOUNDARY = 9.0;
 const LGV_SPEED = 9;      // units per second
@@ -18,7 +19,7 @@ const CRASH_MESSAGES = [
 ];
 const KEY_MAP = { arrowup: 'up', w: 'up', arrowdown: 'down', s: 'down', arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right' };
 
-export function mountGame(container, runner) {
+export async function mountGame(container, runner) {
     const stage = createStage(container, { profile: 'low', post: false, background: 0x0a0f1c });
     const { scene, camera } = stage;
     camera.position.set(0, 15, 15);
@@ -56,6 +57,7 @@ export function mountGame(container, runner) {
         scene.add(zone);
     }
 
+    await nextTask();
     const lgv = createLGV({ id: '01', forksSide: -1 });
     lgv.state.loaded = false;
     lgv.group.position.set(0, 0, 5);
@@ -147,6 +149,7 @@ export function mountGame(container, runner) {
         lgv.update(dt);
     });
 
+    await stage.renderer.compileAsync(scene, camera);
     stage.renderOnce();
     runner.register('game', stage);
     whenVisible(container, () => runner.request('game'), () => runner.release('game'));

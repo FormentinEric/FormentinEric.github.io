@@ -105,8 +105,23 @@ document.addEventListener('DOMContentLoaded', () => {
         io.observe(element);
     }
 
-    lazy3d(document.getElementById('twin'), (runner) =>
-        import('./js/3d/twin/twin.js').then((m) => m.mountTwin(document.getElementById('twin'), runner)));
+    const twinEl = document.getElementById('twin');
+    lazy3d(twinEl, (runner) =>
+        import('./js/3d/twin/twin.js')
+            .then((m) => m.mountTwin(twinEl, runner))
+            .catch((err) => {
+                // modules failed to load: still show a picture of the twin
+                const view = twinEl.querySelector('.twin-view');
+                if (view && !view.querySelector('img')) {
+                    const img = document.createElement('img');
+                    img.className = 'twin-fallback';
+                    img.src = 'assets/twin-fallback.webp';
+                    img.alt = 'Digital twin overview of an intralogistics plant with a robot cell, LGVs and an automated warehouse.';
+                    view.append(img);
+                    twinEl.classList.add('twin-static');
+                }
+                throw err;
+            }));
 
     lazy3d(document.getElementById('game-canvas-container'), (runner) =>
         import('./js/3d/game.js').then((m) => m.mountGame(document.getElementById('game-canvas-container'), runner)));

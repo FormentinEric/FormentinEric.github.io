@@ -8,6 +8,7 @@ import { createTraffic } from './traffic.js';
 import { createMissionManager } from './missions.js';
 import { createFleet } from './fleet.js';
 import { buildPlant } from './scene.js';
+import { nextTask } from '../core/yield.js';
 import { createCodePanel } from '../ui/codePanel.js';
 import { createWatch } from '../ui/watch.js';
 import { createLog } from '../ui/log.js';
@@ -16,14 +17,54 @@ import { createScadaBar } from '../ui/scadaBar.js';
 const LGV_IDS = ['01', '02', '03'];
 const OVERVIEW = { pos: [12, 17, 18], target: [-0.5, 0, 0.5] };
 const FOLLOW_OFFSET = new THREE.Vector3(4.5, 4.2, 5.5);
+const FALLBACK_ALT = 'Digital twin overview: a robot palletizing cell, a pallet wrapping line, three laser guided vehicles on a one-way loop, an automated pallet warehouse and three shipping bays.';
+
+/** Uploads every texture of the scene to the GPU in small steps (avoids one long first frame). */
+async function uploadTextures(stage) {
+    const seen = new Set();
+    stage.scene.traverse((o) => {
+        const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+        for (const m of mats) for (const k of ['map', 'roughnessMap', 'bumpMap', 'emissiveMap', 'alphaMap']) if (m[k]) seen.add(m[k]);
+    });
+    let n = 0;
+    for (const tex of seen) {
+        stage.renderer.initTexture(tex);
+        if (++n % 4 === 0) await nextTask();
+    }
+    await nextTask();
+}
+
+/** Static picture instead of the live 3D (no WebGL, or the GPU context was lost). */
+export function showTwinFallback(root) {
+    const view = root.querySelector('.twin-view');
+    if (!view || view.querySelector('.twin-fallback')) return;
+    view.querySelector('canvas')?.remove();
+    const img = document.createElement('img');
+    img.className = 'twin-fallback';
+    img.src = 'assets/twin-fallback.webp';
+    img.alt = FALLBACK_ALT;
+    img.width = 1280;
+    img.height = 720;
+    img.decoding = 'async';
+    view.append(img);
+    root.classList.add('twin-static');
+}
 
 /**
  * @param {HTMLElement} root  #twin: contains .twin-view (canvas), toolbar buttons and the panel containers
  * @param {{register, request, release}} runner  exclusive WebGL runner
  */
-export function mountTwin(root, runner) {
+export async function mountTwin(root, runner) {
     const view = root.querySelector('.twin-view');
-    const stage = createStage(view, { profile: 'auto', orbit: true, background: 0x0a0f18 });
+    let stage;
+    try {
+        stage = createStage(view, { profile: 'auto', orbit: true, background: 0x0a0f18 });
+    } catch {
+        // no WebGL: picture + static code panel
+        showTwinFallback(root);
+        createCodePanel(root.querySelector('.twin-code')).setState('GoToPick');
+        return { dispose() {} };
+    }
     const { camera, controls, canvas } = stage;
     controls.maxPolarAngle = Math.PI * 0.47;
     controls.minDistance = 3;
@@ -34,6 +75,7 @@ export function mountTwin(root, runner) {
     const traffic = createTraffic(ZONES);
     const missions = createMissionManager({ graph, stations: STATIONS });
 
+    await nextTask();
     // ---------- UI panels ----------
     const code = createCodePanel(root.querySelector('.twin-code'));
     const watch = createWatch(root.querySelector('.twin-watch'));
@@ -42,7 +84,7 @@ export function mountTwin(root, runner) {
     const drops = [];   // simulated times of completed deliveries (missions/h)
 
     let fleet = null;
-    const plant = buildPlant(stage, {
+    const plant = await buildPlant(stage, {
         lgvIds: LGV_IDS,
         onPalletReady: (s) => missions.palletReady(s),
         onPalletAtOut: () => missions.palletAvailableAtOut(),
@@ -195,9 +237,38 @@ export function mountTwin(root, runner) {
 
     if (new URLSearchParams(location.search).has('debug3d')) window.__twin = { stage, fleet, traffic, plant, select, setMode, frame };
 
+    stage.onLost(() => {
+        runner.release('twin');
+        showTwinFallback(root);
+    });
+
+    await nextTask();
     select(selected);
     frame(0);
+    await nextTask();
+    await stage.renderer.compileAsync(stage.scene, camera);   // parallel shader compile: no long task
+    await uploadTextures(stage);
+    // first frame split in two tasks: plain render (scene + shadow programs), then post-processing
+    stage.renderer.render(stage.scene, camera);
+    await nextTask();
     stage.renderOnce();
+    if (prefersReducedMotion()) {
+        // reduced motion: no animation; after a short pre-roll (in small chunks, no long task)
+        // show one still frame of the plant already at work
+        let left = 1200;
+        const chunk = () => {
+            for (let i = 0; i < 200 && left > 0; i++, left--) frame(0.05);
+            if (left > 0) { setTimeout(chunk, 0); return; }
+            tween = null;
+            const p = overviewPose();
+            camera.position.copy(p.pos);
+            controls.target.copy(p.target);
+            controls.update();
+            frame(0);
+            stage.renderOnce();
+        };
+        setTimeout(chunk, 0);
+    }
     if (!prefersReducedMotion()) {
         runner.register('twin', stage);
         whenVisible(view, () => runner.request('twin'), () => runner.release('twin'));

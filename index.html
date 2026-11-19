@@ -3,42 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eric Formentin - Industrial Automation Software Engineer</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
+    <!-- Security: only same-origin resources, plus GoatCounter (EU-hosted, cookieless analytics) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://gc.zgo.at; style-src 'self'; img-src 'self' data: https://formentineric.goatcounter.com; connect-src 'self' https://formentineric.goatcounter.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+
+    <title>Eric Formentin — Industrial Automation Software Engineer</title>
+    <meta name="description" content="Eric Formentin, Industrial Automation Software Engineer based in Italy. C# and SQL Server software for LGV fleets, warehouse management systems, stacker cranes, PLCs and industrial robots.">
+    <link rel="canonical" href="https://formentineric.github.io/">
+
+    <!-- Open Graph / social preview -->
+    <meta property="og:type" content="profile">
+    <meta property="og:site_name" content="Eric Formentin">
+    <meta property="og:title" content="Eric Formentin — Industrial Automation Software Engineer">
+    <meta property="og:description" content="C# and SQL Server software for LGV fleets, automated warehouses, stacker cranes, PLCs and robots. 11 plants in 4 countries.">
+    <meta property="og:url" content="https://formentineric.github.io/">
+    <meta property="og:image" content="https://formentineric.github.io/assets/eric-formentin.jpg">
+    <meta property="og:image:alt" content="Portrait of Eric Formentin">
+    <meta property="profile:first_name" content="Eric">
+    <meta property="profile:last_name" content="Formentin">
+    <meta name="twitter:card" content="summary">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Eric Formentin",
+        "jobTitle": "Industrial Automation Software Engineer",
+        "url": "https://formentineric.github.io/",
+        "image": "https://formentineric.github.io/assets/eric-formentin.jpg",
+        "worksFor": { "@type": "Organization", "name": "Format srl" },
+        "address": { "@type": "PostalAddress", "addressCountry": "IT" },
+        "sameAs": [
+            "https://www.linkedin.com/in/eric-formentin-2bb4361b1",
+            "https://github.com/FormentinEric"
+        ],
+        "knowsAbout": ["C#", "SQL Server", "LGV", "Warehouse Management Systems", "Automated storage and retrieval systems", "Siemens PLC", "Industrial robotics", "HMI/SCADA"]
+    }
+    </script>
+
+    <!-- Self-hosted fonts and styles (no third-party requests) -->
+    <link rel="preload" href="assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="assets/fonts/outfit-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/x-icon" href="./EFIcon.ico">
-    <script data-goatcounter="https://formentineric.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
+    <link rel="icon" type="image/x-icon" href="EFIcon.ico">
 </head>
 <body>
-    
+
     <!-- Background Elements -->
-    <canvas id="bg-canvas"></canvas>
-    <div class="bg-shape bg-shape-1"></div>
-    <div class="bg-shape bg-shape-2"></div>
+    <canvas id="bg-canvas" aria-hidden="true"></canvas>
+    <div class="bg-shape bg-shape-1" aria-hidden="true"></div>
+    <div class="bg-shape bg-shape-2" aria-hidden="true"></div>
 
     <!-- Header Navigation -->
     <header class="navbar">
         <div class="nav-container">
             <a href="#" class="logo">EF<span>.</span></a>
-            <button class="mobile-toggle" aria-label="Toggle navigation">
-                <i class="fas fa-bars"></i>
+            <button class="mobile-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="primary-nav">
+                <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#bars"></use></svg>
             </button>
-            <nav class="nav-links">
-                <a href="#about" class="nav-link">About</a>
+            <nav class="nav-links" id="primary-nav">
                 <a href="#warehouse" class="nav-link">Industrial Logic</a>
+                <a href="#about" class="nav-link">About</a>
                 <a href="#experience" class="nav-link">Experience</a>
+                <a href="#projects" class="nav-link">Projects</a>
                 <a href="#skills" class="nav-link">Skills</a>
                 <a href="#education" class="nav-link">Education</a>
+                <a href="#game" class="nav-link">Simulator</a>
                 <a href="mailto:formentinec@gmail.com" class="btn-primary" id="nav-contact">Contact Me</a>
             </nav>
         </div>
@@ -50,17 +80,17 @@
         <section id="hero" class="hero-section glass-panel">
             <div class="hero-content">
                 <div class="profile-container">
-                    <img src="1593806501124.jpg" alt="Eric Formentin" class="profile-img">
+                    <img src="assets/eric-formentin.jpg" alt="Eric Formentin" class="profile-img" width="150" height="150">
                     <div class="status-indicator">
                         <span class="status-dot"></span>
                         <span class="status-text">Available for new opportunities</span>
                     </div>
                 </div>
-                
+
                 <h1 class="hero-title">
                     Hi, I'm <span class="highlight">Eric Formentin</span>
                 </h1>
-                
+
                 <div class="typing-container">
                     <h2 class="hero-subtitle">Industrial Automation Software Engineer</h2>
                 </div>
@@ -70,9 +100,11 @@
                 </p>
 
                 <div class="hero-actions">
-                    <a href="#experience" class="btn-primary">View My Work <i class="fas fa-arrow-right"></i></a>
+                    <a href="#projects" class="btn-primary">View My Work <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#arrow-right"></use></svg></a>
                     <div class="social-links">
-                        <a href="mailto:formentinec@gmail.com" aria-label="Email" title="formentinec@gmail.com"><i class="fas fa-envelope"></i></a>
+                        <a href="mailto:formentinec@gmail.com" aria-label="Email" title="formentinec@gmail.com"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#envelope"></use></svg></a>
+                        <a href="https://www.linkedin.com/in/eric-formentin-2bb4361b1" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" title="LinkedIn"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#linkedin"></use></svg></a>
+                        <a href="https://github.com/FormentinEric" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#github"></use></svg></a>
                     </div>
                 </div>
             </div>
@@ -84,7 +116,7 @@
                 <h2><span class="highlight">01.</span> Industrial Logic in Action</h2>
                 <div class="header-line"></div>
             </div>
-            
+
             <div class="warehouse-container">
                 <div id="warehouse-canvas-container" class="glass-panel"></div>
                 <div class="pc-mockup glass-panel">
@@ -107,13 +139,13 @@
                 <h2><span class="highlight">02.</span> About Me</h2>
                 <div class="header-line"></div>
             </div>
-            
+
             <div class="about-content glass-panel card">
                 <p>Hello! I am Eric Formentin, a dedicated <strong>Industrial Automation Software Engineer</strong> based in Italy. My tech journey began with networking and IT hardware, quickly evolving into a passion for software development and automation.</p>
-                
+
                 <p>Today, my primary focus lies in <strong>PC programming</strong>. I build complex, scalable applications using <strong>C# and SQL Server</strong>. My work bridges the gap between the IT world and the factory floor, implementing customized automation solutions, managing databases, and integrating systems perfectly.</p>
-                
-                <p>What sets me apart is my comprehensive understanding of industrial environments. Alongside my PC programming expertise, I have hands-on experience programming and maintaining <strong>PLCs (Siemens) and industrial robots (ABB & Fanuc)</strong>. This dual perspective enables me to develop superior architectural designs for industrial control and supervisory systems (HMI/SCADA).</p>
+
+                <p>What sets me apart is my comprehensive understanding of industrial environments. Alongside my PC programming expertise, I have hands-on experience programming and maintaining <strong>PLCs (Siemens) and industrial robots (ABB &amp; Fanuc)</strong>. This dual perspective enables me to develop superior architectural designs for industrial control and supervisory systems (HMI/SCADA).</p>
             </div>
         </section>
 
@@ -123,9 +155,9 @@
                 <h2><span class="highlight">03.</span> Experience</h2>
                 <div class="header-line"></div>
             </div>
-            
+
             <div class="timeline">
-                
+
                 <!-- Experience Item 1 -->
                 <div class="timeline-item">
                     <div class="timeline-dot"></div>
@@ -175,7 +207,7 @@
                     <div class="timeline-dot"></div>
                     <div class="timeline-content glass-panel card">
                         <div class="exp-header">
-                            <h3 class="job-title">Web & App Developer</h3>
+                            <h3 class="job-title">Web &amp; App Developer</h3>
                             <span class="date-badge">(6 months internship) 2016 &mdash; 2018</span>
                         </div>
                         <h4 class="company">Marazzi Group &middot; Sassuolo, Italy</h4>
@@ -190,18 +222,298 @@
             </div>
         </section>
 
+        <!-- Projects Section
+             How to add/edit a project: see GUIDA-PROGETTI.md (kept outside the repo).
+             data-type: lgv | asrs | robotics | plc  (drives the filters)
+             data-lgv / data-cranes / data-robots / data-country: drive the stats strip -->
+        <section id="projects" class="section">
+            <div class="section-header">
+                <h2><span class="highlight">04.</span> Projects</h2>
+                <div class="header-line"></div>
+            </div>
+
+            <ul class="project-stats glass-panel" aria-label="Projects in numbers">
+                <li><span class="stat-value" data-stat="lgv">59</span> <span class="stat-label">LGVs</span></li>
+                <li><span class="stat-value" data-stat="cranes">9</span> <span class="stat-label">stacker cranes</span></li>
+                <li><span class="stat-value" data-stat="robots">14</span> <span class="stat-label">robots</span></li>
+                <li><span class="stat-value" data-stat="plants">11</span> <span class="stat-label">plants</span></li>
+                <li><span class="stat-value" data-stat="countries">4</span> <span class="stat-label">countries</span></li>
+            </ul>
+
+            <div class="project-filters" role="group" aria-label="Filter projects by type">
+                <button type="button" class="filter-btn" data-filter="all" aria-pressed="true">All</button>
+                <button type="button" class="filter-btn" data-filter="lgv" aria-pressed="false">LGV &amp; WMS</button>
+                <button type="button" class="filter-btn" data-filter="asrs" aria-pressed="false">Stacker cranes</button>
+                <button type="button" class="filter-btn" data-filter="robotics" aria-pressed="false">Robotics</button>
+                <button type="button" class="filter-btn" data-filter="plc" aria-pressed="false">Lines &amp; PLC</button>
+            </div>
+
+            <div class="project-grid">
+
+                <!-- ===== Format srl ===== -->
+                <article class="project-card project-featured glass-panel" data-type="lgv" data-country="Greece" data-lgv="38">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#lgv"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">Vikos Kalpaki</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Kalpaki, Greece</p>
+                        </div>
+                        <span class="date-badge">01/2026 &mdash; Present</span>
+                    </div>
+                    <p class="project-title"><svg class="icon featured-star" aria-hidden="true"><use href="assets/icons.svg#star"></use></svg> Industry 4.0 intralogistics for 6 production lines</p>
+                    <p class="project-desc">A fleet of <strong>38 LGVs</strong> moves pallets out of <strong>6 production lines</strong> into automated storage and brings raw materials back to the lines. Development and testing of the control software: custom handling of special material flows, pallet logistics and real-time communication with the company ERP.</p>
+                    <ul class="project-badges">
+                        <li>38 LGVs</li><li>6 production lines</li><li>ERP integration</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">C# &middot; SQL Server</span>
+                        <span class="project-company">Format srl</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+                <article class="project-card glass-panel" data-type="lgv" data-country="Italy" data-lgv="12">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#lgv"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">Pontevecchio srl</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Lusernetta, Italy</p>
+                        </div>
+                        <span class="date-badge">03/2025 &mdash; 07/2025</span>
+                    </div>
+                    <p class="project-title">12-LGV fleet serving the production lines</p>
+                    <p class="project-desc">LGV system that serves the production lines, picks finished products and stores them automatically. Development and testing, communication with the company ERP, and on-site management of logistics and technical issues.</p>
+                    <ul class="project-badges">
+                        <li>12 LGVs</li><li>Automatic storage</li><li>ERP integration</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">C# &middot; SQL Server</span>
+                        <span class="project-company">Format srl</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+                <article class="project-card glass-panel" data-type="lgv" data-country="Costa Rica" data-lgv="5">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#lgv"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">FTZ Coca-Cola Industrias Ltda</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Liberia, Costa Rica</p>
+                        </div>
+                        <span class="date-badge">09/2024 &mdash; 12/2024</span>
+                    </div>
+                    <p class="project-title">Fleet expansion on a live LGV system</p>
+                    <p class="project-desc">Integration of <strong>5 new LGVs</strong> into an existing, running installation, bug fixing on the existing software and ongoing customer support.</p>
+                    <ul class="project-badges">
+                        <li>+5 LGVs</li><li>Live system</li><li>Customer support</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">C# &middot; SQL Server</span>
+                        <span class="project-company">Format srl</span>
+                        <span class="onsite-badge remote"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#laptop-code"></use></svg> Remote</span>
+                    </div>
+                </article>
+
+                <article class="project-card glass-panel" data-type="lgv" data-country="Italy" data-lgv="4">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#warehouse"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">Arcese Trasporti S.p.A.</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Basiano, Italy</p>
+                        </div>
+                        <span class="date-badge">01/2024 &mdash; 05/2024</span>
+                    </div>
+                    <p class="project-title">WMS for an automated warehouse</p>
+                    <p class="project-desc">Development and testing of the Warehouse Management System behind an automated warehouse run by <strong>4 LGVs</strong>: pallet shape control, picking operations and integration with the enterprise ERP.</p>
+                    <ul class="project-badges">
+                        <li>WMS</li><li>4 LGVs</li><li>Pallet shape control</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">C# &middot; SQL Server</span>
+                        <span class="project-company">Format srl</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+                <!-- ===== FB Solutions snc ===== -->
+                <article class="project-card glass-panel" data-type="asrs" data-country="Italy" data-cranes="4">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#boxes-stacked"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">Tecnosystemi S.p.A. Società Benefit</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Vittorio Veneto, Italy</p>
+                        </div>
+                        <span class="date-badge">10/2022 &mdash; 08/2023</span>
+                    </div>
+                    <p class="project-title">Miniload warehouse with 500 m of conveyors</p>
+                    <p class="project-desc">Development and testing of <strong>4 miniload stacker cranes</strong> for crates, linked by a <strong>500 m</strong> roller conveyor system. Picking stations, communication with the company ERP and an integrated traceability system connecting the PLCs to SQL Server.</p>
+                    <ul class="project-badges">
+                        <li>4 miniload cranes</li><li>500 m conveyors</li><li>PLC &harr; SQL traceability</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">PLC &middot; SQL Server</span>
+                        <span class="project-company">FB Solutions</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+                <article class="project-card glass-panel" data-type="plc" data-country="Italy">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#industry"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">Global Radiatori</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Rogno, Italy</p>
+                        </div>
+                        <span class="date-badge">05/2022 &mdash; 09/2022</span>
+                    </div>
+                    <p class="project-title">Pallet elevator lines with quality control</p>
+                    <p class="project-desc">Implementation of <strong>2 pallet elevator lines</strong> with integrated quality control.</p>
+                    <ul class="project-badges">
+                        <li>2 lines</li><li>Quality control</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">PLC</span>
+                        <span class="project-company">FB Solutions</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+                <article class="project-card glass-panel" data-type="asrs" data-country="Italy" data-cranes="5">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#boxes-stacked"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">AIA Food</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Vallese, Italy</p>
+                        </div>
+                        <span class="date-badge">10/2021 &mdash; 04/2022</span>
+                    </div>
+                    <p class="project-title">5 stacker cranes for pallet storage</p>
+                    <p class="project-desc">Testing of <strong>5 pallet stacker cranes</strong>, transport lines and pallet measurement control, with communication to the ERP (Reply).</p>
+                    <ul class="project-badges">
+                        <li>5 stacker cranes</li><li>Pallet measurement</li><li>ERP integration</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">PLC &middot; SCADA</span>
+                        <span class="project-company">FB Solutions</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+                <article class="project-card glass-panel" data-type="robotics" data-country="Italy" data-robots="1">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#robot"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">Bauli Group</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Romanengo, Italy</p>
+                        </div>
+                        <span class="date-badge">03/2021 &mdash; 09/2021</span>
+                    </div>
+                    <p class="project-title">New FANUC palletizing robot</p>
+                    <p class="project-desc">Addition and management of a new <strong>FANUC palletizing robot</strong>, integration of new handling logic and new pallet types, and correction of errors across the whole palletizing line.</p>
+                    <ul class="project-badges">
+                        <li>FANUC robot</li><li>Palletizing</li><li>Line debugging</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">Robotics &middot; PLC</span>
+                        <span class="project-company">FB Solutions</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+                <article class="project-card glass-panel" data-type="robotics" data-country="Italy" data-robots="8">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#robot"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">OMR Automotive</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Modena, Italy</p>
+                        </div>
+                        <span class="date-badge">07/2020 &mdash; 02/2021</span>
+                    </div>
+                    <p class="project-title">Chassis line for sports cars</p>
+                    <p class="project-desc">Implementation of a chassis production line for sports cars: <strong>8 handling, welding and riveting robots</strong>, with several Siemens PLCs managing signal exchange and safety.</p>
+                    <ul class="project-badges">
+                        <li>8 robots</li><li>Welding &amp; riveting</li><li>Safety</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">Robotics &middot; Siemens PLC</span>
+                        <span class="project-company">FB Solutions</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+                <article class="project-card glass-panel" data-type="robotics" data-country="Italy" data-robots="2">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#robot"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">Meritor HVS</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Cameri, Italy</p>
+                        </div>
+                        <span class="date-badge">01/2020 &mdash; 06/2020</span>
+                    </div>
+                    <p class="project-title">Robotic islands for automatic lathes</p>
+                    <p class="project-desc">Implementation of <strong>2 ABB robotic islands</strong> tending automatic lathes, with communication managed through a Siemens safety PLC.</p>
+                    <ul class="project-badges">
+                        <li>2 ABB robots</li><li>Lathe tending</li><li>Safety PLC</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">ABB &middot; Siemens Safe PLC</span>
+                        <span class="project-company">FB Solutions</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+                <article class="project-card glass-panel" data-type="robotics" data-country="Germany" data-robots="3">
+                    <div class="project-head">
+                        <span class="project-icon" aria-hidden="true"><svg class="icon"><use href="assets/icons.svg#robot"></use></svg></span>
+                        <div class="project-id">
+                            <h3 class="project-client">Herma GmbH</h3>
+                            <p class="project-meta"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#location"></use></svg> Filderstadt, Germany</p>
+                        </div>
+                        <span class="date-badge">10/2019 &mdash; 12/2019</span>
+                    </div>
+                    <p class="project-title">Paper-roll palletizing with 3 FANUC robots</p>
+                    <p class="project-desc"><strong>3 FANUC robots</strong> handling and palletizing paper rolls, with a Siemens PLC managing the conveyors and the roll shape control.</p>
+                    <ul class="project-badges">
+                        <li>3 FANUC robots</li><li>Palletizing</li><li>Shape control</li>
+                    </ul>
+                    <div class="project-foot">
+                        <span class="project-stack">FANUC &middot; Siemens PLC</span>
+                        <span class="project-company">FB Solutions</span>
+                        <span class="onsite-badge"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#helmet-safety"></use></svg> On-site</span>
+                    </div>
+                </article>
+
+            </div>
+
+            <div class="minor-projects glass-panel">
+                <h3>Other work</h3>
+                <ul>
+                    <li>
+                        <span class="minor-name">Python consultant</span>
+                        <span class="minor-client">Casarini Robotica</span>
+                        <span class="minor-date">10/2025 &mdash; 12/2025</span>
+                    </li>
+                    <li>
+                        <span class="minor-name">Website bug fixing (ASP.NET, PHP)</span>
+                        <span class="minor-client">HyperFarm</span>
+                        <span class="minor-date">07/2024 &mdash; 12/2024</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
         <!-- Skills Section -->
         <section id="skills" class="section">
             <div class="section-header">
-                <h2><span class="highlight">04.</span> Skills & Tech Stack</h2>
+                <h2><span class="highlight">05.</span> Skills &amp; Tech Stack</h2>
                 <div class="header-line"></div>
             </div>
 
             <div class="skills-grid">
-                
+
                 <!-- Programming Languages -->
                 <div class="skill-category glass-panel card">
-                    <div class="skill-icon"><i class="fas fa-code"></i></div>
+                    <div class="skill-icon"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#code"></use></svg></div>
                     <h3>Core Languages</h3>
                     <div class="skill-tags">
                         <span class="tag tag-primary">C#</span>
@@ -216,13 +528,13 @@
 
                 <!-- Tools & Frameworks -->
                 <div class="skill-category glass-panel card">
-                    <div class="skill-icon"><i class="fas fa-layer-group"></i></div>
-                    <h3>Tools & Environments</h3>
+                    <div class="skill-icon"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#layers"></use></svg></div>
+                    <h3>Tools &amp; Environments</h3>
                     <div class="skill-tags">
                         <span class="tag tag-secondary">Visual Studio</span>
                         <span class="tag tag-secondary">SQL Server</span>
                         <span class="tag">Windows/Linux</span>
-                        <span class="tag">Git & DevOps</span>
+                        <span class="tag">Git &amp; DevOps</span>
                         <span class="tag">Unity 3D</span>
                         <span class="tag">Asp.Net</span>
                         <span class="tag">.Net Framework</span>
@@ -235,7 +547,7 @@
 
                 <!-- Professional Skills -->
                 <div class="skill-category glass-panel card">
-                    <div class="skill-icon"><i class="fas fa-microchip"></i></div>
+                    <div class="skill-icon"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#microchip"></use></svg></div>
                     <h3>Professional Skills</h3>
                     <div class="skill-tags">
                         <span class="tag">PC Programming</span>
@@ -243,7 +555,7 @@
                         <span class="tag">PLC Programming</span>
                         <span class="tag">Robotics</span>
                         <span class="tag">HMI / SCADA</span>
-                        <span class="tag">Networks & IT Systems</span>
+                        <span class="tag">Networks &amp; IT Systems</span>
                         <span class="tag">Hardware Maintenance</span>
                     </div>
                 </div>
@@ -254,13 +566,13 @@
         <!-- Education Section -->
         <section id="education" class="section">
             <div class="section-header">
-                <h2><span class="highlight">05.</span> Education</h2>
+                <h2><span class="highlight">06.</span> Education</h2>
                 <div class="header-line"></div>
             </div>
 
             <div class="education-container glass-panel card">
                 <div class="edu-item">
-                    <div class="edu-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="edu-icon"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#graduation-cap"></use></svg></div>
                     <div class="edu-details">
                         <h3>Perito Informatico (IT Diploma)</h3>
                         <h4>Istituto Industriale Statale A.Volta &mdash; Sassuolo, Italy</h4>
@@ -270,7 +582,7 @@
                 </div>
 
                 <div class="edu-item mt-4">
-                    <div class="edu-icon"><i class="fas fa-certificate"></i></div>
+                    <div class="edu-icon"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#certificate"></use></svg></div>
                     <div class="edu-details">
                         <h3>Advanced Professional Certifications</h3>
                         <h4>LinkedIn Learning</h4>
@@ -284,28 +596,33 @@
         <!-- Interactive Game Section -->
         <section id="game" class="section">
             <div class="section-header">
-                <h2><span class="highlight">06.</span> Interactive LGV Simulator</h2>
+                <h2><span class="highlight">07.</span> Interactive LGV Simulator</h2>
                 <div class="header-line"></div>
             </div>
-            
+
             <div class="game-container glass-panel">
-                <div id="game-canvas-container"></div>
-                
+                <div id="game-canvas-container" tabindex="0" role="application" aria-label="LGV simulator. Focus here, then drive with W A S D or arrow keys; Space picks or drops the pallet.">
+                    <div class="game-hint" aria-hidden="true">
+                        <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#hand-pointer"></use></svg>
+                        Click here, then drive with <kbd>WASD</kbd> / <kbd>&larr;&uarr;&darr;&rarr;</kbd> &middot; <kbd>Space</kbd> pick / drop
+                    </div>
+                </div>
+
                 <div class="game-controls">
                     <div class="control-panel">
                         <div class="d-pad">
-                            <button class="game-btn" id="btn-up" aria-label="Move Forward"><i class="fas fa-chevron-up"></i></button>
+                            <button class="game-btn" id="btn-up" aria-label="Move Forward"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#chevron-up"></use></svg></button>
                             <div class="d-pad-middle">
-                                <button class="game-btn" id="btn-left" aria-label="Turn Left"><i class="fas fa-chevron-left"></i></button>
-                                <button class="game-btn" id="btn-down" aria-label="Move backward"><i class="fas fa-chevron-down"></i></button>
-                                <button class="game-btn" id="btn-right" aria-label="Turn Right"><i class="fas fa-chevron-right"></i></button>
+                                <button class="game-btn" id="btn-left" aria-label="Turn Left"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#chevron-left"></use></svg></button>
+                                <button class="game-btn" id="btn-down" aria-label="Move backward"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg></button>
+                                <button class="game-btn" id="btn-right" aria-label="Turn Right"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#chevron-right"></use></svg></button>
                             </div>
                         </div>
                         <div class="action-buttons">
                             <button class="game-btn action-btn text-btn" id="btn-action">Pick / Drop Pallet</button>
                         </div>
                     </div>
-                    <div class="game-status" id="game-status">
+                    <div class="game-status" id="game-status" role="status" aria-live="polite">
                         System Online. Awaiting commands.
                     </div>
                 </div>
@@ -318,10 +635,10 @@
                 <h2>Get In Touch</h2>
                 <p>Currently working as a Software Developer, but I am always open to discussing new opportunities, challenges, and interesting projects.</p>
                 <p>Whether you have a question or just want to say hi, I'll try my best to get back to you!</p>
-                <a href="mailto:formentinec@gmail.com" class="btn-primary contact-btn">Say Hello <i class="fas fa-paper-plane"></i></a>
-                <div style="margin-top: 1.5rem;">
-                    <a href="https://www.linkedin.com/in/eric-formentin-2bb4361b1?utm_source=share_via" target="_blank" class="btn-primary contact-btn" style="background: #0a66c2; border-color: #0a66c2;">
-                        LinkedIn <i class="fab fa-linkedin"></i>
+                <a href="mailto:formentinec@gmail.com" class="btn-primary contact-btn">Say Hello <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#paper-plane"></use></svg></a>
+                <div class="contact-secondary">
+                    <a href="https://www.linkedin.com/in/eric-formentin-2bb4361b1" target="_blank" rel="noopener noreferrer" class="btn-primary contact-btn btn-linkedin">
+                        LinkedIn <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#linkedin"></use></svg>
                     </a>
                 </div>
             </div>
@@ -333,27 +650,18 @@
     <footer>
         <div class="footer-content">
             <a href="#" class="logo footer-logo">E.F.</a>
-            <p>Built with modern web technologies. Designed for performance.</p>
+            <p>Hand-built and self-hosted. No cookies, no third-party trackers.</p>
             <p class="copyright">
-                &copy; 2026 Eric Formentin. All rights reserved. | 
-                <a href="privacy.html" style="color: var(--accent-blue); text-decoration: none;">Privacy Policy</a>
+                &copy; 2026 Eric Formentin. All rights reserved. |
+                <a href="privacy.html" class="footer-link">Privacy Policy</a>
             </p>
         </div>
     </footer>
 
-    <!-- GDPR Cookie Consent Banner -->
-    <div id="cookie-banner" class="cookie-banner hidden">
-        <div class="cookie-content">
-            <p>This website uses only technical cookies to ensure better navigation. <br>
-            No profiling or tracking cookies are used. For more information, read the <a href="privacy.html">Privacy Policy</a>.</p>
-        </div>
-        <div class="cookie-actions">
-            <button id="accept-cookies" class="btn-primary">Accept</button>
-        </div>
-    </div>
-
-    <!-- Three.js for 3D Animations -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <!-- Scripts (all self-hosted) -->
+    <script src="vendor/three.min.js"></script>
     <script src="script.js"></script>
+    <script src="projects.js"></script>
+    <script src="analytics.js"></script>
 </body>
 </html>

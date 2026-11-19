@@ -1,107 +1,71 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - Eric Formentin</title>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>Privacy Policy — Eric Formentin</title>
+    <meta name="description" content="Privacy policy of formentineric.github.io: no cookies, self-hosted resources, cookieless EU-hosted visit counter.">
+    <link rel="canonical" href="https://formentineric.github.io/privacy.html">
+    <link rel="preload" href="assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/x-icon" href="./EFIcon.ico">
-    
-    <style>
-        .privacy-container {
-            max-width: 800px;
-            margin: 120px auto 60px;
-            padding: 2rem;
-            background: rgba(17, 24, 39, 0.65);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-        }
-        
-        .privacy-container h1 {
-            color: var(--accent-blue);
-            margin-bottom: 2rem;
-            font-size: 2.5rem;
-        }
-        
-        .privacy-container p {
-            color: var(--text-muted);
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-            font-size: 1.1rem;
-        }
-        
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(14, 165, 233, 0.1);
-            color: var(--accent-cyan);
-            text-decoration: none;
-            border-radius: 8px;
-            border: 1px solid rgba(14, 165, 233, 0.3);
-            transition: all var(--transition-fast);
-            margin-bottom: 2rem;
-        }
-        
-        .back-btn:hover {
-            background: rgba(14, 165, 233, 0.2);
-        }
-    </style>
+    <link rel="icon" type="image/x-icon" href="EFIcon.ico">
 </head>
-<body>
-    
-    <div class="privacy-container">
-        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Torna alla Home</a>
-        
+<body class="privacy-page">
+
+    <main class="privacy-container">
+        <a href="index.html" class="back-btn"><svg class="icon" aria-hidden="true"><use href="assets/icons.svg#arrow-left"></use></svg> Back to Home</a>
+
         <h1>Privacy Policy</h1>
-        
-        <p><em>Last Updated: 06/03/2026</em></p>
+        <p><em>Last updated: 19 November 2026</em></p>
 
-        <p>Welcome to <a href="https://formentineric.github.io" style="color: var(--accent-blue);">https://formentineric.github.io</a>. Your privacy is important. This page explains transparently how this website handles data.</p>
+        <p>This page explains how <a href="https://formentineric.github.io/">formentineric.github.io</a> (the "site") handles personal data, in accordance with Article 13 of the EU General Data Protection Regulation (GDPR, Regulation (EU) 2016/679) and the Italian Privacy Code (D.Lgs. 196/2003).</p>
 
-        <h2 style="color: var(--accent-cyan); margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem;">1. Data Controller</h2>
-        <p>This website is owned by a private individual and is used for portfolio purposes.<br>
-        For any questions, you can contact me at: <a href="mailto:formentinec@gmail.com" style="color: var(--accent-blue);">formentinec@gmail.com</a></p>
+        <h2>1. Data controller</h2>
+        <p>Eric Formentin, private individual, Italy.<br>
+        Contact: <a href="mailto:formentinec@gmail.com">formentinec@gmail.com</a></p>
 
-        <h2 style="color: var(--accent-cyan); margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem;">2. Hosting and Log Data</h2>
-        <p>This website is static and hosted on GitHub Pages (GitHub, Inc.).<br>
-        The site itself does not use proprietary profiling cookies or traffic analysis tools (like Google Analytics).</p>
-        <p>However, for technical purposes, GitHub may collect some data in server logs (such as the visitor's IP address) for security and diagnostic reasons. This collection is necessary for the operation of the service (Legitimate Interest).<br>
-        For more details, please refer to the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" target="_blank" style="color: var(--accent-blue);">GitHub Privacy Statement</a>.</p>
-
-        <h2 style="color: var(--accent-cyan); margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem;">3. Cookies</h2>
-        <p>This website:</p>
-        <ul style="color: var(--text-muted); line-height: 1.8; margin-bottom: 1.5rem; font-size: 1.1rem; list-style-type: none; padding-left: 0;">
-            <li>✅ Does NOT use profiling cookies.</li>
-            <li>✅ Does NOT use advertising cookies.</li>
-            <li>✅ Does NOT use third-party analytics cookies.</li>
+        <h2>2. Summary</h2>
+        <ul class="privacy-list">
+            <li>No cookies of any kind are set by this site.</li>
+            <li>No advertising, profiling or cross-site tracking.</li>
+            <li>Fonts, icons and scripts are hosted on this site itself: your browser does not contact Google Fonts or other content delivery networks.</li>
+            <li>The only external service is a cookieless, EU-hosted visit counter (GoatCounter), which is not loaded at all if your browser sends a "Global Privacy Control" or "Do Not Track" signal.</li>
         </ul>
-        <p>Therefore, under current regulations, a cookie consent banner is not required to browse this site.</p>
 
-        <h2 style="color: var(--accent-cyan); margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem;">4. Data Provided Voluntarily</h2>
-        <p>If you decide to send me an email to the addresses indicated on this site, your email address and any other personal data included in the message will be acquired solely to respond to your requests. This data will not be shared with third parties or used for newsletters without your explicit consent.</p>
+        <h2>3. Hosting and server logs</h2>
+        <p>The site is a static website hosted on GitHub Pages by GitHub, Inc. (USA). When you visit any GitHub Pages site, GitHub logs your IP address for security purposes. This processing is necessary to deliver the site and protect it from abuse (legal basis: legitimate interest, Art. 6(1)(f) GDPR). GitHub, Inc. is certified under the EU-U.S. Data Privacy Framework. More information: <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub General Privacy Statement</a>.</p>
 
-        <h2 style="color: var(--accent-cyan); margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem;">5. External Links</h2>
-        <p>This website may contain links to external sites (e.g., LinkedIn, Twitter, external projects). Please note that I am not responsible for the privacy practices or content of such sites.</p>
+        <h2>4. Visit statistics (GoatCounter)</h2>
+        <p>To know how many people visit the site, I use <a href="https://www.goatcounter.com" target="_blank" rel="noopener noreferrer">GoatCounter</a>, a privacy-friendly counter that only produces aggregate statistics (pages viewed, referring site, browser, operating system, screen size, language, approximate country).</p>
+        <ul class="privacy-list">
+            <li>It does not set cookies and does not store identifiers in your browser.</li>
+            <li>Your IP address and full browser signature are not stored: they are used only in memory (for up to 8 hours) to avoid counting the same visit twice, and are replaced by a random string.</li>
+            <li>Data are stored on servers of Hetzner Online GmbH in Finland and Germany (EU). They are not shared with third parties and are not combined with other data.</li>
+            <li>The counter script only reads an optional opt-out flag in your browser's local storage.</li>
+        </ul>
+        <p>Legal basis: legitimate interest in knowing aggregate usage of the site (Art. 6(1)(f) GDPR). Because the tool only produces aggregate, non-identifying statistics for this single site, no consent banner is required under the Italian Data Protection Authority's guidelines on cookies and other tracking tools (10 June 2021).</p>
+        <p><strong>How to opt out:</strong> enable "Global Privacy Control" or "Do Not Track" in your browser, or open <a href="index.html#toggle-goatcounter">this link</a> once: the counter will stop counting your visits in this browser.</p>
 
-        <h2 style="color: var(--accent-cyan); margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem;">6. Your Rights</h2>
-        <p>In accordance with the GDPR (EU Regulation 2016/679), you have the right to request information about your data, ask for its modification, or request its deletion at any time by contacting the email address indicated in section 1.</p>
-    </div>
+        <h2>5. Emails you send me</h2>
+        <p>If you contact me by email, I use your email address and the content of your message only to reply to you (legal basis: steps taken at your request and legitimate interest, Art. 6(1)(b) and (f) GDPR). These data are not shared with third parties and are kept only as long as needed for our correspondence.</p>
 
-    <!-- Footer -->
+        <h2>6. External links</h2>
+        <p>The site links to external websites (e.g. LinkedIn, GitHub). Those sites are only contacted if you click the link, and they have their own privacy policies.</p>
+
+        <h2>7. Your rights</h2>
+        <p>You have the right to access, rectify and erase your data, to restrict or object to their processing, and to data portability (Articles 15–22 GDPR). To exercise these rights, write to the email address in section 1.</p>
+        <p>You also have the right to lodge a complaint with the Italian Data Protection Authority (<a href="https://www.garanteprivacy.it" target="_blank" rel="noopener noreferrer">Garante per la protezione dei dati personali</a>) or with the supervisory authority of the EU country where you live or work.</p>
+
+        <h2>8. Changes</h2>
+        <p>This policy may be updated if the site changes. The date at the top shows the latest version.</p>
+    </main>
+
     <footer>
-        <p>&copy; 2026 Eric Formentin. All rights reserved.</p>
-        <p><a href="privacy.html" style="color: var(--accent-blue); text-decoration: none;">Privacy Policy</a></p>
+        <div class="footer-content">
+            <p class="copyright">&copy; 2026 Eric Formentin. All rights reserved. | <a href="privacy.html" class="footer-link">Privacy Policy</a></p>
+        </div>
     </footer>
 
 </body>

@@ -139,7 +139,7 @@ function rackBlock(M, zFront, skip = new Set()) {
 /** Floor rail with end buffers, top guide rail hung under ties across the rack tops, end portal. */
 function craneRails(M) {
     const g = new THREE.Group();
-    const bx0 = RACK.x0 - 0.6, bx1 = RACK_X1 + 1.6;
+    const bx0 = RACK.x0 - 0.6, bx1 = RACK_X1 + 1.8;   // end buffers clear the crane's own buffers at the last bay
     g.add(mesh(new THREE.BoxGeometry(bx1 - bx0, 0.02, 0.34), M.steelDark, (bx0 + bx1) / 2, 0.01, AISLE_Z, false));
     g.add(mesh(new THREE.BoxGeometry(bx1 - bx0, 0.09, 0.07), M.steelWorn, (bx0 + bx1) / 2, 0.065, AISLE_Z));
     for (const x of [bx0 + 0.15, bx1 - 0.15]) g.add(mesh(new THREE.BoxGeometry(0.3, 0.4, 0.5), M.hazard, x, 0.2, AISLE_Z));

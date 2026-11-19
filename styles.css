@@ -203,6 +203,38 @@ ul {
   pointer-events: none;
 }
 
+/* colour key of the SCADA view (shown only while it is on) */
+.twin-scada-legend {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.6rem;
+  display: none;
+  gap: 0.7rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: rgba(10, 15, 28, 0.75);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  pointer-events: none;
+}
+
+.twin-scada-on .twin-scada-legend { display: flex; }
+
+.twin-scada-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-right: 0.3rem;
+  border-radius: 2px;
+  vertical-align: -0.05rem;
+}
+
+.twin-scada-legend .lg-moving::before { background: #22c55e; }
+.twin-scada-legend .lg-waiting::before { background: #f59e0b; }
+.twin-scada-legend .lg-alarm::before { background: #ef4444; }
+.twin-scada-legend .lg-idle::before { background: #9ca3af; }
+
 .twin-hint kbd {
   font: 0.72rem Consolas, monospace;
   border: 1px solid var(--glass-border);

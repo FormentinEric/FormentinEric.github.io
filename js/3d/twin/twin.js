@@ -179,6 +179,7 @@ export async function mountTwin(root, runner) {
     // ---------- SCADA view: unlit, muted plant + LGVs as wireframes coloured by state ----------
     const STATE_COLORS = { moving: 0x22c55e, waiting: 0xf59e0b, alarm: 0xef4444, idle: 0x9ca3af };
     const stateMats = Object.fromEntries(Object.entries(STATE_COLORS).map(([k, c]) => [k, new THREE.MeshBasicMaterial({ color: c, wireframe: true })]));
+    const scadaMats = new Set(Object.values(stateMats));   // every material the SCADA view puts on a mesh
     const SCADA_BG = new THREE.Color(0x050a12);
     const mutedCache = new Map();       // lit material → unlit muted copy
     const swapped = new Map();          // mesh → its own material
@@ -195,14 +196,23 @@ export async function mountTwin(root, runner) {
     function muted(m) {
         if (!mutedCache.has(m)) {
             const c = m.color ? m.color.clone().lerp(new THREE.Color(0x0b1422), 0.86) : new THREE.Color(0x101c2b);
-            mutedCache.set(m, new THREE.MeshBasicMaterial({ color: c, map: null }));
+            // keep what shapes the surface: text on transparent textures, mesh fences (cut-out), film, two-sided panels
+            const shaped = m.transparent || m.alphaTest > 0;
+            const mm = new THREE.MeshBasicMaterial({
+                color: c, map: shaped ? m.map : null, transparent: m.transparent, opacity: m.opacity, alphaTest: m.alphaTest,
+                side: m.side, depthWrite: m.depthWrite, polygonOffset: m.polygonOffset,
+                polygonOffsetFactor: m.polygonOffsetFactor, polygonOffsetUnits: m.polygonOffsetUnits,
+            });
+            mutedCache.set(m, mm);
+            scadaMats.add(mm);
         }
         return mutedCache.get(m);
     }
     function swapIn() {
         // lit meshes only: zone tiles, safety fields, beams and glows are already unlit and stay as they are
+        // a mesh that set its own lit material again (status LEDs do every frame) is swapped again
         stage.scene.traverse((o) => {
-            if (!o.isMesh || swapped.has(o) || Array.isArray(o.material) || o.material.isMeshBasicMaterial || o === grid) return;
+            if (!o.isMesh || Array.isArray(o.material) || scadaMats.has(o.material) || o.material.isMeshBasicMaterial || o === grid) return;
             swapped.set(o, o.material);
             o.material = lgvOf.has(o) ? stateMats.idle : muted(o.material);
         });
@@ -220,6 +230,7 @@ export async function mountTwin(root, runner) {
             if (floor) floor.visible = false;          // the grid is the floor of the SCADA view
             stage.scene.add(grid);
             swapIn();
+            updateScada(fleet.snapshot());           // state colours even when the stage is not running (reduced motion)
         } else {
             for (const [o, m] of swapped) o.material = m;
             swapped.clear();

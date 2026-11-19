@@ -253,8 +253,13 @@ export async function buildPlant(stage, { lgvIds, onPalletReady, onPalletAtOut, 
     }
     const carried = {};
 
+    // loads are clones of 6 cached templates: clones share geometry and materials (no memory growth)
+    const loadTemplates = new Map();
     function newLoad(wrap, x, z, heading) {
-        const g = createLoadedPallet({ cols: 2, rows: 3, layers: 3, wrap, seed: Math.floor(Math.random() * 9) });
+        const variant = Math.floor(Math.random() * 3);
+        const key = `${wrap ? 'w' : 'n'}${variant}`;
+        if (!loadTemplates.has(key)) loadTemplates.set(key, createLoadedPallet({ cols: 2, rows: 3, layers: 3, wrap, seed: variant * 3 }));
+        const g = loadTemplates.get(key).clone();
         g.position.set(x, 0, z);
         g.rotation.y = heading;
         g.userData.wrap = wrap;

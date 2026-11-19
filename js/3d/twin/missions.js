@@ -30,10 +30,11 @@ export function createMissionManager({ graph, stations }) {
 
         /**
          * @param {{id:string, node:string, battery:number}[]} free  LGVs able to take work now
-         * @param {{chargerFree:boolean}} ctx
+         * @param {{chargerFree:boolean, canStart?:(mission)=>boolean}} ctx  canStart: false keeps a mission queued
+         *        (e.g. its pick station is still occupied by another LGV)
          * @returns {{lgvId:string, mission:{id:string,type:string,from:string|null,to:string}}[]}
          */
-        next(free, { chargerFree }) {
+        next(free, { chargerFree, canStart = () => true }) {
             const out = [];
             const available = [...free];
             // low batteries first: they go charging instead of taking work
@@ -45,12 +46,13 @@ export function createMissionManager({ graph, stations }) {
                 }
             }
             const workers = available.filter((l) => l.battery >= CHARGE_THRESHOLD);
-            while (queue.length && workers.length) {
-                const mission = queue[0];
+            for (let i = 0; i < queue.length && workers.length;) {
+                const mission = queue[i];
+                if (!canStart(mission)) { i++; continue; }
                 const pick = stations[mission.from].node;
                 workers.sort((a, b) => distance(a.node, pick) - distance(b.node, pick));
                 const lgv = workers.shift();
-                queue.shift();
+                queue.splice(i, 1);
                 out.push({ lgvId: lgv.id, mission });
             }
             return out;

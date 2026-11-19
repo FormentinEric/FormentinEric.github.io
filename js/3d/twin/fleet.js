@@ -249,7 +249,10 @@ export function createFleet({ graph, traffic, missions, stations, lgvIds, batter
         const free = fleet.filter((v) => !v.cur && v.actions.length === 0);
         if (free.length) {
             const chargerFree = !stationRes.has('C1') || free.some((v) => v.station === 'C1' && v.battery >= CHARGE_FULL - 0.01);
-            for (const { lgvId, mission } of missions.next(free.map((v) => ({ id: v.id, node: v.node, battery: v.battery })), { chargerFree })) {
+            // a mission whose pick station is still occupied by another LGV waits in the queue:
+            // otherwise the free LGV would reserve its own station while waiting for that one (circular wait)
+            const canStart = (m) => !stationRes.has(m.from);
+            for (const { lgvId, mission } of missions.next(free.map((v) => ({ id: v.id, node: v.node, battery: v.battery })), { chargerFree, canStart })) {
                 const v = fleet.find((f) => f.id === lgvId);
                 // a full LGV resting on the charger makes room for one that needs it
                 if (mission.type === 'CHARGE' && stationRes.get('C1') && stationRes.get('C1') !== v.id) {
